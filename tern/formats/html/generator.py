@@ -263,11 +263,9 @@ def dict_handler(dict_obj, indent):  # pylint: disable=too-many-branches, useles
 
 def report_dict_to_html(dict_obj):
     '''Writes html code for report'''
-    html_string = ''
-    html_string = html_string + '<ul class ="myUL"> \n'
-    html_string = html_string + \
-        '<li><span class="caret">REPORT DETAILS</span> \n'
-    html_string = html_string + dict_handler(dict_obj, 0)
+    html_string = '' + '<ul class ="myUL"> \n'
+    html_string += '<li><span class="caret">REPORT DETAILS</span> \n'
+    html_string += dict_handler(dict_obj, 0)
     html_string = html_string + '</li></ul> \n'
     return html_string
 
@@ -275,11 +273,13 @@ def report_dict_to_html(dict_obj):
 def write_licenses(image_obj_list):
     '''Adds licenses to top of the page'''
     licenses = get_licenses_only(image_obj_list)
-    html_string = ''
-    html_string = html_string + '<ul class ="myUL"> \n'
-    html_string = html_string + '<li><span class="caret">Summary of \
+    html_string = '' + '<ul class ="myUL"> \n'
+    html_string += (
+        '<li><span class="caret">Summary of \
         Licenses Found</span> \n'
-    html_string = html_string + '<ul class ="nested"> \n'
+    )
+
+    html_string += '<ul class ="nested"> \n'
     for lic in licenses:
         html_string = html_string + \
             '<li style="font-family: \'Inconsolata\' , monospace;" >' + \
@@ -305,11 +305,8 @@ def create_html_report(report_dict, image_obj_list):
 
 def get_report_dict(image_obj_list):
     '''Given an image object list, return a python dict of the report'''
-    image_list = []
-    for image in image_obj_list:
-        image_list.append({'image': image.to_dict()})
-    image_dict = {'images': image_list}
-    return image_dict
+    image_list = [{'image': image.to_dict()} for image in image_obj_list]
+    return {'images': image_list}
 
 
 class HTML(generator.Generate):
@@ -317,8 +314,7 @@ class HTML(generator.Generate):
         '''Given a list of image objects, create a html report
         for the images'''
         report_dict = get_report_dict(image_obj_list)
-        report = create_html_report(report_dict, image_obj_list)
-        return report
+        return create_html_report(report_dict, image_obj_list)
 
     def generate_layer(self, layer):
         """Given a layer object, create a html report for the layer"""

@@ -37,11 +37,14 @@ class DockerImage(Image):
         self._tag = repo_dict.get('tag')
         self.set_checksum(
             repo_dict.get('digest_type'), repo_dict.get('digest'))
-        if not self.checksum and general.check_tar(repotag) is False:
-            # see if we can set it via the repo_digest string
-            if repo_digest and ':' in repo_digest:
-                repo_digest_list = repo_digest.split(':')
-                self.set_checksum(repo_digest_list[0], repo_digest_list[1])
+        if (
+            not self.checksum
+            and general.check_tar(repotag) is False
+            and repo_digest
+            and ':' in repo_digest
+        ):
+            repo_digest_list = repo_digest.split(':')
+            self.set_checksum(repo_digest_list[0], repo_digest_list[1])
 
     @property
     def repotags(self):
@@ -53,9 +56,7 @@ class DockerImage(Image):
 
     def to_dict(self, template=None):
         '''Return a dictionary representation of the Docker image'''
-        # this should take care of 'origins' and 'layers'
-        di_dict = super().to_dict(template)
-        return di_dict
+        return super().to_dict(template)
 
     def get_image_manifest(self):
         '''Assuming that there is a temp folder with a manifest.json of
@@ -68,10 +69,7 @@ class DockerImage(Image):
 
     def get_image_layers(self, manifest):
         '''Given the manifest, return the layers'''
-        layers = []
-        for layer in manifest[0].get('Layers'):
-            layers.append(layer)
-        return layers
+        return list(manifest[0].get('Layers'))
 
     def get_image_config_file(self, manifest):
         '''Given the manifest, return the config file'''
@@ -100,16 +98,11 @@ class DockerImage(Image):
 
     def get_image_history(self, config):
         '''If the config has the image history return it. Else return None'''
-        if 'history' in config.keys():
-            return config['history']
-        return None
+        return config['history'] if 'history' in config.keys() else None
 
     def get_diff_ids(self, config):
         '''Given the image config, return the filesystem diff ids'''
-        diff_ids = []
-        for item in config['rootfs']['diff_ids']:
-            diff_ids.append(item.split(':').pop())
-        return diff_ids
+        return [item.split(':').pop() for item in config['rootfs']['diff_ids']]
 
     def get_diff_checksum_type(self, config):
         '''Get the checksum type that was used to calculate the diff_id

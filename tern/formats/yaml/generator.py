@@ -15,8 +15,7 @@ from tern.formats import generator
 
 def print_yaml_report(image):
     '''Given an image object, create a yaml report'''
-    image_dict = {}
-    image_dict.update({'image': image.to_dict()})
+    image_dict = {'image': image.to_dict()}
     return yaml.dump(image_dict, default_flow_style=False)
 
 

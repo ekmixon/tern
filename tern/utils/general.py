@@ -40,9 +40,9 @@ def get_top_dir(working_dir=None):
 
 def initialize_names():
     randint = random.randint(10000, 99999)  # nosec
-    constants.image = constants.image + "_" + str(randint)
-    constants.tag = constants.tag + "_" + str(randint)
-    constants.container = constants.container + "_" + str(randint)
+    constants.image = f"{constants.image}_{randint}"
+    constants.tag = f"{constants.tag}_{randint}"
+    constants.container = f"{constants.container}_{randint}"
 
 
 def clean_command(command):
@@ -65,7 +65,7 @@ def split_command(shell_script):
     skip_pattern = r"\".*?\"(*SKIP)(*F)|'.*?'(*SKIP)(*F)"
     # pattern for split a concatenated command
     match_pattern = r':;|&&|;|\|\|'
-    pattern = skip_pattern + '|' + match_pattern
+    pattern = f'{skip_pattern}|{match_pattern}'
     concatenated_commands = regex.split(pattern, shell_script)
     # use keywords to match loop, branch.
     keywords = {'for': 'done', 'if': 'fi', 'case': 'esac', 'while': 'done'}
@@ -84,19 +84,7 @@ def split_command(shell_script):
             continue
         # `commands_string` is empty means we are not in a loop or branch,
         # so we need to check keywords first.
-        if not commands_string:
-            # quick check on keywords
-            if cmd.startswith(start_keywords):
-                # if match, go throgh keywords to find which one is matched.
-                for k, v in keywords.items():
-                    if cmd.startswith(k):
-                        current_keyword = (k, v)
-                        commands_string.append(cmd)
-            else:
-                # not match,`cmd` should be variable or command, so we
-                # match variable here.
-                statements.append(parse_shell_variables_and_command(cmd))
-        else:
+        if commands_string:
             # `commands_string` is not empty means we are in a loop or
             # branch, so we need to check end keyword.
             commands_string.append(cmd)
@@ -106,6 +94,16 @@ def split_command(shell_script):
                         commands_string, current_keyword))
                 commands_string = []
                 current_keyword = ("", "")
+        elif cmd.startswith(start_keywords):
+            # if match, go throgh keywords to find which one is matched.
+            for k, v in keywords.items():
+                if cmd.startswith(k):
+                    current_keyword = (k, v)
+                    commands_string.append(cmd)
+        else:
+            # not match,`cmd` should be variable or command, so we
+            # match variable here.
+            statements.append(parse_shell_variables_and_command(cmd))
     return statements
 
 
@@ -127,9 +125,7 @@ def parse_shell_variables_and_command(concatenated_command):
     # export_pattern matched
     if match_export:
         # assignment_pattern matched
-        statement['variable'] = [{'name': match_export.group(1),
-                                 'value': match_export.group(2)}]
-    # check on assignment_pattern
+        statement['variable'] = [{'name': match_export[1], 'value': match_export[2]}]
     else:
         variable_list = []
         last_idx = 0
@@ -143,9 +139,7 @@ def parse_shell_variables_and_command(concatenated_command):
             last_idx = m.span(0)[1]
         if variable_list:
             statement['variable'] = variable_list
-        cleaned_command = clean_command(concatenated_command[last_idx:])
-        # exists command after assignment OR begins with command
-        if cleaned_command:
+        if cleaned_command := clean_command(concatenated_command[last_idx:]):
             statement['command'] = cleaned_command
     return statement
 
@@ -161,15 +155,12 @@ def parse_shell_loop_and_branch(commands_string, keyword_tuple):
         loop_statements = []
         for cmd in commands_string:
             # 'loop_statements' is empty here, so we have not found 'do' yet.
-            if not loop_statements:
-                # find 'do', append to 'loop_statements'
-                if cmd.startswith('do'):
-                    # strip 'do' and whitespaces
-                    cmd = cmd.lstrip('do ')
-                    stat = parse_shell_variables_and_command(cmd)
-                    loop_statements.append(stat)
-            # 'loop_statements' is NOT empty here, we are in the statements now
-            else:
+            if loop_statements:
+                stat = parse_shell_variables_and_command(cmd)
+                loop_statements.append(stat)
+            elif cmd.startswith('do'):
+                # strip 'do' and whitespaces
+                cmd = cmd.lstrip('do ')
                 stat = parse_shell_variables_and_command(cmd)
                 loop_statements.append(stat)
         # 'loop_statements' are ended with done, so we can just remove
@@ -203,10 +194,8 @@ def parse_command(command):
     options = re.compile('^-')
     option_list = []
     word_list = []
-    command_dict = {}
     command_tokens = command.split(' ')
-    # first token is the command name
-    command_dict.update({'name': command_tokens.pop(0).strip()})
+    command_dict = {'name': command_tokens.pop(0).strip()}
     # find options in the rest of the list
     while command_tokens:
         if options.match(command_tokens[0]):
@@ -220,8 +209,8 @@ def parse_command(command):
         else:
             word_list.append(command_tokens.pop(0).strip())
     # now we have options and the remainder words
-    command_dict.update({'options': option_list,
-                         'words': word_list})
+    command_dict |= {'options': option_list, 'words': word_list}
+
     return command_dict
 
 
@@ -258,18 +247,13 @@ def prop_names(obj):
 
 def check_tar(tar_file):
     '''Check if provided file is a valid tar archive file'''
-    if os.path.exists(tar_file):
-        if tarfile.is_tarfile(tar_file):
-            return True
-    return False
+    return bool(os.path.exists(tar_file) and tarfile.is_tarfile(tar_file))
 
 
 def check_root():
     '''Check to see if the current user is root or not. Return True if root
     and False if not'''
-    if os.getuid() == 0:
-        return True
-    return False
+    return os.getuid() == 0
 
 
 def check_image_string(image_str: str):
@@ -277,9 +261,9 @@ def check_image_string(image_str: str):
     image@digest_type:digest format. If not, return False.'''
     tag_format = r'.+:.+'
     digest_format = r'.+@.+:.+'
-    if re.match(tag_format, image_str) or re.match(digest_format, image_str):
-        return True
-    return False
+    return bool(
+        re.match(tag_format, image_str) or re.match(digest_format, image_str)
+    )
 
 
 def parse_image_string(image_string):
@@ -310,8 +294,11 @@ def parse_image_string(image_string):
                 'digest_type': tokens[1],
                 'digest': tokens[2]}
     if len(tokens) == 4:
-        return {'name': tokens[0] + ":" + tokens[1],
-                'tag': '',
-                'digest_type': tokens[2],
-                'digest': tokens[3]}
+        return {
+            'name': f"{tokens[0]}:{tokens[1]}",
+            'tag': '',
+            'digest_type': tokens[2],
+            'digest': tokens[3],
+        }
+
     return None

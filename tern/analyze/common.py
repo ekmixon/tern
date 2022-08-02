@@ -38,9 +38,10 @@ def get_shell_commands(shell_command_line):
             command_list.append(Command(stat['command']))
         elif 'loop' in stat:
             loop_stat = stat['loop']['loop_statements']
-            for st in loop_stat:
-                if 'command' in st:
-                    command_list.append(Command(st['command']))
+            command_list.extend(
+                Command(st['command']) for st in loop_stat if 'command' in st
+            )
+
         elif 'branch' in stat:
             branch_report = branch_report + '\n'.join(stat['content']) + '\n\n'
     if branch_report:
@@ -82,8 +83,7 @@ def load_from_cache(layer, redo=False):
 def load_packages_from_cache(layer):
     '''Given a layer object, populate package level information'''
     loaded = False
-    raw_pkg_list = cache.get_packages(layer.fs_hash)
-    if raw_pkg_list:
+    if raw_pkg_list := cache.get_packages(layer.fs_hash):
         logger.debug(
             'Loading packages from cache: layer \"%s\"', layer.fs_hash[:10])
         for pkg_dict in raw_pkg_list:
@@ -103,21 +103,21 @@ def load_packages_from_cache(layer):
 
 def load_files_from_cache(layer):
     '''Given a layer object, populate file level information'''
-    raw_file_list = cache.get_files(layer.fs_hash)
-    if raw_file_list:
-        logger.debug(
-            'Loading files from cache: layer \"%s\"', layer.fs_hash[:10])
-        for file_dict in raw_file_list:
-            f = FileData(file_dict['name'], file_dict['path'])
-            f.fill(file_dict)
-            # collect file origins
-            if 'origins' in file_dict.keys():
-                for origin_dict in file_dict['origins']:
-                    for notice in origin_dict['notices']:
-                        f.origins.add_notice_to_origins(
-                            origin_dict['origin_str'], Notice(
-                                notice['message'], notice['level']))
-            layer.add_file(f)
+    if not (raw_file_list := cache.get_files(layer.fs_hash)):
+        return
+    logger.debug(
+        'Loading files from cache: layer \"%s\"', layer.fs_hash[:10])
+    for file_dict in raw_file_list:
+        f = FileData(file_dict['name'], file_dict['path'])
+        f.fill(file_dict)
+        # collect file origins
+        if 'origins' in file_dict.keys():
+            for origin_dict in file_dict['origins']:
+                for notice in origin_dict['notices']:
+                    f.origins.add_notice_to_origins(
+                        origin_dict['origin_str'], Notice(
+                            notice['message'], notice['level']))
+        layer.add_file(f)
 
 
 def load_notices_from_cache(layer):
@@ -133,10 +133,7 @@ def load_notices_from_cache(layer):
 
 def get_total_notices(layer):
     '''Find the total number of notices in a layer'''
-    count = 0
-    for origin in layer.origins.origins:
-        count += len(origin.notices)
-    return count
+    return sum(len(origin.notices) for origin in layer.origins.origins)
 
 
 def save_to_cache(image):
@@ -153,9 +150,7 @@ def save_to_cache(image):
 def is_empty_layer(layer):
     '''Return True if the given image layer is empty'''
     cwd = rootfs.get_untar_dir(layer.tar_file)
-    if len(os.listdir(cwd)) == 0:
-        return True
-    return False
+    return len(os.listdir(cwd)) == 0
 
 
 def get_licenses_from_deb_copyright(deb_copyright):
@@ -178,8 +173,7 @@ def get_licenses_from_deb_copyright(deb_copyright):
     for paragraph in deb_pkg_data.get("paragraphs"):
         pkg_license = paragraph.get("license")
         if not pkg_license.startswith("*"):
-            pkg_license = pkg_license.split("\n")[0]
-            if pkg_license:
+            if pkg_license := pkg_license.split("\n")[0]:
                 pkg_licenses.add(pkg_license)
 
     return list(pkg_licenses)
@@ -190,10 +184,10 @@ def get_deb_package_licenses(deb_copyrights):
     Given a list of debian copyrights for the same number of packages,
     returns a list package licenses for each of the packages
     '''
-    deb_licenses = []
-    for deb_copyright in deb_copyrights:
-        deb_licenses.append(get_licenses_from_deb_copyright(deb_copyright))
-    return deb_licenses
+    return [
+        get_licenses_from_deb_copyright(deb_copyright)
+        for deb_copyright in deb_copyrights
+    ]
 
 
 def remove_duplicate_layer_files(layer):
@@ -225,11 +219,9 @@ def check_git_src(dockerfile_path):
         sha_info = get_git_sha(path_to_toplevel)
         # if path_to_toplevel exists, name_info should be the folder name
         name_info = os.path.basename(path_to_toplevel)
-        comment_line = ('git project name: ' + name_info +
-                        ', HEAD sha: ' + sha_info)
+        return ((f'git project name: {name_info}' + ', HEAD sha: ') + sha_info)
     else:
-        comment_line = 'Not a git repository'
-    return comment_line
+        return 'Not a git repository'
 
 
 def get_git_sha(path_to_toplevel):

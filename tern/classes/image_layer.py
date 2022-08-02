@@ -202,17 +202,16 @@ class ImageLayer:
             self.__checksums[key.lower()] = value.lower()
 
     def add_package(self, package):
-        if isinstance(package, Package):
-            if package.name not in self.get_package_names():
-                self.__packages.append(package)
-        else:
+        if not isinstance(package, Package):
             raise TypeError('Object type is {0}, should be Package'.format(
                 type(package)))
+        if package.name not in self.get_package_names():
+            self.__packages.append(package)
 
     def remove_package(self, package_name):
         rem_index = 0
         success = False
-        for index in range(0, len(self.__packages)):
+        for index in range(len(self.__packages)):
             if self.packages[index].name == package_name:
                 rem_index = index
                 success = True
@@ -222,19 +221,15 @@ class ImageLayer:
         return success
 
     def add_file(self, filedata):
-        if isinstance(filedata, FileData):
-            if filedata.path not in self.get_file_paths():
-                self.__files.append(filedata)
-        else:
+        if not isinstance(filedata, FileData):
             raise TypeError('Object type is {0}, should be FileData'.format(
                 type(filedata)))
+        if filedata.path not in self.get_file_paths():
+            self.__files.append(filedata)
 
     def get_file_paths(self):
         '''Get the list of file paths in this layer'''
-        file_path_list = []
-        for f in self.files:
-            file_path_list.append(f.path)
-        return file_path_list
+        return [f.path for f in self.files]
 
     def remove_file(self, file_path):
         '''Given the file path, remove the file object from the list of files
@@ -261,41 +256,36 @@ class ImageLayer:
             # use the template mapping for key names
             for key, prop in prop_names(self):
                 if prop in template.image_layer().keys():
-                    layer_dict.update(
-                        {template.image_layer()[prop]: self.__dict__[key]})
+                    layer_dict[template.image_layer()[prop]] = self.__dict__[key]
             # update the 'origins' if it exists in the mapping
             if 'origins' in template.image_layer().keys():
-                layer_dict.update(
-                    {template.image_layer()['origins']: self.origins.to_dict(
-                    )})
+                layer_dict[
+                    template.image_layer()['origins']
+                ] = self.origins.to_dict()
+
             # update the 'packages' if it exists in the mapping
             if 'packages' in template.image_layer().keys():
-                layer_dict.update(
-                    {template.image_layer()['packages']: pkg_list})
+                layer_dict[template.image_layer()['packages']] = pkg_list
             # update the 'files' if it exists in the mapping
             if 'files' in template.image_layer().keys():
-                layer_dict.update(
-                    {template.image_layer()['files']: file_list})
+                layer_dict[template.image_layer()['files']] = file_list
         else:
             # directly use property names
             for key, prop in prop_names(self):
-                layer_dict.update({prop: self.__dict__[key]})
+                layer_dict[prop] = self.__dict__[key]
             # update with 'packages' info
-            layer_dict.update({'packages': pkg_list})
+            layer_dict['packages'] = pkg_list
             # update with 'files' info
-            layer_dict.update({'files': file_list})
+            layer_dict['files'] = file_list
             # take care of the 'origins' property
-            layer_dict.update({'origins': self.origins.to_dict()})
+            layer_dict['origins'] = self.origins.to_dict()
             # take care of the 'extension_info' property
-            layer_dict.update({'extension_info': self.extension_info})
+            layer_dict['extension_info'] = self.extension_info
         return layer_dict
 
     def get_package_names(self):
         '''Get the list of package names in this layer'''
-        pkg_list = []
-        for pkg in self.packages:
-            pkg_list.append(pkg.name)
-        return pkg_list
+        return [pkg.name for pkg in self.packages]
 
     def gen_fs_hash(self):
         '''Get the filesystem hash if the image class was created with a
@@ -316,21 +306,17 @@ class ImageLayer:
         with open(hash_file, encoding='utf-8') as f:
             content = f.readlines()
         for line in content:
-            m = pattern.search(line)
-            if m:
+            if m := pattern.search(line):
                 # m.group(2) contains the file path
                 # m.group(1) contains the extattrs and checksum
-                file_data = FileData(os.path.basename(m.group(2)),
-                                     os.path.relpath(m.group(2), '.'))
+                file_data = FileData(os.path.basename(m[2]), os.path.relpath(m[2], '.'))
                 # attrs_tuple contains (extattrs, '|', checksum)
-                attrs_tuple = m.group(1).rpartition('|')
+                attrs_tuple = m[1].rpartition('|')
                 file_data.set_checksum('sha256', attrs_tuple[2])
                 file_data.extattrs = attrs_tuple[0]
                 self.add_file(file_data)
 
     def get_layer_workdir(self):
-        # If the layer is created by a WORKDIR command then return the workdir
-        match = re.search(r"\bWORKDIR\ (\/\w+)+\b", self.created_by)
-        if match:
+        if match := re.search(r"\bWORKDIR\ (\/\w+)+\b", self.created_by):
             return match.group().split()[1]
         return ''

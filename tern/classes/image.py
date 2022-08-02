@@ -122,9 +122,9 @@ class Image:
         False if it does not'''
         is_set = True
         if imported_image.layers:
-            imported_layer = self.get_layer_object(
-                imported_image.layers[-1].diff_id)
-            if imported_layer:
+            if imported_layer := self.get_layer_object(
+                imported_image.layers[-1].diff_id
+            ):
                 imported_layer.import_image = imported_image
             else:
                 is_set = False
@@ -135,18 +135,19 @@ class Image:
     def get_last_import_layer(self):
         '''Get the index of the last layer that was brought in from
         an imported image'''
-        for layer in self.layers[::-1]:
-            if layer.import_image:
-                return self.layers.index(layer)
-        return None
+        return next(
+            (
+                self.layers.index(layer)
+                for layer in self.layers[::-1]
+                if layer.import_image
+            ),
+            None,
+        )
 
     def get_layer_object(self, diff_id):
         '''Given a layer diff id, return the layer object that contains this
         diff id'''
-        for layer in self.layers:
-            if layer.diff_id == diff_id:
-                return layer
-        return None
+        return next((layer for layer in self.layers if layer.diff_id == diff_id), None)
 
     def load_image(self, load_until_layer=0):
         '''Load image metadata
@@ -162,21 +163,19 @@ class Image:
             # use the template mapping for the key name
             for key, prop in prop_names(self):
                 if prop in template.image().keys():
-                    image_dict.update(
-                        {template.image()[prop]: self.__dict__[key]})
+                    image_dict[template.image()[prop]] = self.__dict__[key]
             # update 'origins' and 'layers' values if mapping exists
             if 'origins' in template.image().keys():
-                image_dict.update(
-                    {template.image()['origins']: self.origins.to_dict()})
+                image_dict[template.image()['origins']] = self.origins.to_dict()
             if 'layers' in template.image().keys():
-                image_dict.update({template.image()['layers']: layer_list})
+                image_dict[template.image()['layers']] = layer_list
         else:
             # use the property name
             for key, prop in prop_names(self):
-                image_dict.update({prop: self.__dict__[key]})
+                image_dict[prop] = self.__dict__[key]
             # update 'origins' and 'layers' lists
-            image_dict.update({'layers': layer_list})
-            image_dict.update({'origins': self.origins.to_dict()})
+            image_dict['layers'] = layer_list
+            image_dict['origins'] = self.origins.to_dict()
         return image_dict
 
     def get_human_readable_id(self):
@@ -188,9 +187,9 @@ class Image:
         if "/" in self.name:
             name = name.replace("/", "-")
         if self.tag:
-            name = name + '-{}'.format(self.tag)
+            name = name + f'-{self.tag}'
         elif self.checksum:
-            name = name + '-{}'.format(self.checksum)
+            name = name + f'-{self.checksum}'
         return name
 
     def get_download_location(self):

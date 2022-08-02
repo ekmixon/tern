@@ -49,14 +49,14 @@ logger.addHandler(log_handler)
 
 def check_file_existence(path):
     if not os.path.isfile(path):
-        msg = "{}: does not exist".format(path)
+        msg = f"{path}: does not exist"
         raise argparse.ArgumentTypeError(msg)
     return path
 
 
 def check_dir_existence(path):
     if not os.path.isdir(path):
-        msg = "{}: does not exist".format(path)
+        msg = f"{path}: does not exist"
         raise argparse.ArgumentTypeError(msg)
     return path
 
@@ -65,15 +65,13 @@ def check_image_input(options):
     """If the option is a raw image tarball then check if it is a tar file.
     If the option is a image string, check if it is in the right format"""
     # Check if the option is a tarball
-    if options.raw_image:
-        if not general.check_tar(options.raw_image):
-            logger.critical(errors.incorrect_raw_option)
-            sys.exit(1)
+    if options.raw_image and not general.check_tar(options.raw_image):
+        logger.critical(errors.incorrect_raw_option)
+        sys.exit(1)
     # Check if the image string has the right format
-    if options.docker_image:
-        if not check_image_string(options.docker_image):
-            logger.critical(errors.incorrect_image_string_format)
-            sys.exit(1)
+    if options.docker_image and not check_image_string(options.docker_image):
+        logger.critical(errors.incorrect_image_string_format)
+        sys.exit(1)
 
 
 def get_version():
@@ -81,10 +79,9 @@ def get_version():
     ver_type, commit_or_ver = general.get_git_rev_or_version()
     message = ''
     if ver_type == "package":
-        message = "Tern version {}".format(commit_or_ver)
+        return f"Tern version {commit_or_ver}"
     else:
-        message = "Tern at commit {}".format(commit_or_ver)
-    return message
+        return f"Tern at commit {commit_or_ver}"
 
 
 def do_main(args):

@@ -97,7 +97,7 @@ def get_context_layers(reports, format_string):
     # correct consumer entrypoint. Hence we maintain a known pattern for
     # entrypoint strings which is simply that the corresponding consumer for
     # a given generator is the generator's entrypoint string + 'c'
-    consumer_format_string = format_string + 'c'
+    consumer_format_string = f'{format_string}c'
     try:
         mgr = driver.DriverManager(
             namespace='tern.formats',

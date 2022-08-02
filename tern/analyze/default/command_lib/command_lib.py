@@ -85,11 +85,15 @@ def check_for_unique_package(package_list, package_name):
     Given a list of package dictionaries, find the package dictionary with the
     given package name. If not there look for a package dictionary with the
     name as 'default'. If that is not there, return an empty dictionary'''
-    pkg = {}
-    for package in package_list:
-        if package['name'] == package_name:
-            pkg = package
-            break
+    pkg = next(
+        (
+            package
+            for package in package_list
+            if package['name'] == package_name
+        ),
+        {},
+    )
+
     if not pkg:
         for package in package_list:
             if package['name'] == 'default':
@@ -141,8 +145,7 @@ def set_command_attrs(command_obj):
     '''Given the command object, move the install and remove listings to
     subcommands and set the flags, then return True. If the command name
     is not in the snippets library then return False'''
-    command_listing = get_command_listing(command_obj.name)
-    if command_listing:
+    if command_listing := get_command_listing(command_obj.name):
         # the command is in the library
         # look for install, remove and ignore commands
         if 'install' in command_listing.keys():
@@ -165,7 +168,7 @@ def collate_snippets(snippet_list, package=''):
             snippet_list[i] = snip.replace('{}', '{{}}')
     full_cmd = ''
     last_index = len(snippet_list) - 1
-    for index in range(0, last_index):
+    for index in range(last_index):
         full_cmd = full_cmd + snippet_list[index].format_map(
             FormatAwk(package=package)) + ' && '
     full_cmd = full_cmd + snippet_list[last_index].format_map(
@@ -181,11 +184,10 @@ def check_sourcable(command, package_name):
     sourcable = False
     if command in command_lib['snippets'].keys():
         for package in command_lib['snippets'][command]['packages']:
-            if package['name'] == package_name or \
-                    package['name'] == 'default':
-                if 'url' in package.keys() or \
-                        'src' in package.keys():
-                    sourcable = True
+            if package['name'] in [package_name, 'default'] and (
+                'url' in package.keys() or 'src' in package.keys()
+            ):
+                sourcable = True
     return sourcable
 
 
@@ -205,8 +207,7 @@ def check_os_guess(binary):
     string.'''
     os_list = []
     try:
-        for o in command_lib['base'][binary]['os_guess']:
-            os_list.append(o)
+        os_list.extend(iter(command_lib['base'][binary]['os_guess']))
         return ', '.join(os_list)
     except KeyError:
         return ''

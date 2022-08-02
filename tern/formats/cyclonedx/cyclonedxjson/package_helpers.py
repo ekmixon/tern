@@ -45,7 +45,9 @@ def get_packages_list(image_obj):
     os_guess = cyclonedx_common.get_os_guess(image_obj)
 
     for layer_obj in image_obj.layers:
-        for package in layer_obj.packages:
-            package_dicts.append(get_package_dict(os_guess, package))
+        package_dicts.extend(
+            get_package_dict(os_guess, package)
+            for package in layer_obj.packages
+        )
 
     return package_dicts

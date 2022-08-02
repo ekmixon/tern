@@ -183,12 +183,9 @@ class TestAnalyzeCommon(unittest.TestCase):
         github.com/<username>/tern'''
         url_list = common.get_git_url(self.test_dockerfile)
         check_num = len(url_list)
-        pass_num = 0
         git_username_reg = r'([a-zA-Z\d_-]{0,38})'
-        pattern = re.compile(r'github.com/'+git_username_reg+r'/tern')
-        for url in url_list:
-            if pattern.search(url) is not None:
-                pass_num += 1
+        pattern = re.compile(f'github.com/{git_username_reg}/tern')
+        pass_num = sum(pattern.search(url) is not None for url in url_list)
         self.assertEqual(pass_num, check_num)
 
 

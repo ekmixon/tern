@@ -108,8 +108,7 @@ def get_layer_info_list(layer):
     for f in layer.files:
         layer_file_licenses_list.extend(f.licenses)
 
-    layer_file_licenses_list = list(set(layer_file_licenses_list))
-    if layer_file_licenses_list:
+    if layer_file_licenses_list := list(set(layer_file_licenses_list)):
         file_level_licenses = ", ".join(layer_file_licenses_list)
 
     for package in layer.packages:
@@ -122,10 +121,9 @@ def get_layer_info_list(layer):
 def print_licenses_only(image_obj_list):
     '''Print a complete list of licenses for all images'''
     full_license_list = content.get_licenses_only(image_obj_list)
-    # Collect the full list of licenses from all the layers
-    licenses = formats.full_licenses_list.format(list=", ".join(
-        full_license_list) if full_license_list else 'None')
-    return licenses
+    return formats.full_licenses_list.format(
+        list=", ".join(full_license_list) if full_license_list else 'None'
+    )
 
 
 class Default(generator.Generate):
@@ -139,9 +137,7 @@ class Default(generator.Generate):
             if not print_inclusive and image.load_until_layer != 0:
                 report_only = True
             report = report + print_full_report(image, print_inclusive)
-        if report_only:
-            return report
-        return report + print_licenses_only(image_obj_list)
+        return report if report_only else report + print_licenses_only(image_obj_list)
 
     def generate_layer(self, layer):
         """Generate a default report for one layer object"""

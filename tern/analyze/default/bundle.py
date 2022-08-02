@@ -32,9 +32,9 @@ def get_pkg_dict_for_index(attr_list, index):
                 fd_dict = FileData(os.path.split(
                     filepath)[1], filepath).to_dict()
                 fd_list.append(fd_dict)
-            pkg_dict.update({'files': fd_list})
+            pkg_dict['files'] = fd_list
         else:
-            pkg_dict.update({key: attr_list[key][index]})
+            pkg_dict[key] = attr_list[key][index]
     return pkg_dict
 
 
@@ -51,20 +51,19 @@ def convert_to_pkg_dicts(attr_lists):
                'proj_url': 'proj_urls',
                'pkg_licenses': 'pkg_licenses',
                'files': 'files'}
-    pkg_list = []
     len_names = len(attr_lists['names'])
     # make a list of keys that correspond with package property names
     filtered_attr_list = {}
     for key, value in mapping.items():
         if value in attr_lists.keys():
             if len(attr_lists[value]) == len_names:
-                filtered_attr_list.update({key: attr_lists[value]})
+                filtered_attr_list[key] = attr_lists[value]
             else:
                 logger.warning("Inconsistent lengths for key: %s", value)
-    # convert each of the keys into package dictionaries
-    for index in range(0, len_names):
-        pkg_list.append(get_pkg_dict_for_index(filtered_attr_list, index))
-    return pkg_list
+    return [
+        get_pkg_dict_for_index(filtered_attr_list, index)
+        for index in range(len_names)
+    ]
 
 
 def fill_pkg_results(image_layer, pkg_list_dict, pkg_format):

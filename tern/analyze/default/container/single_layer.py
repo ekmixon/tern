@@ -45,8 +45,7 @@ def find_os_release(host_path):
     # Create dictionary from os-release values
     os_release_dict = {}
     for line in lines:
-        line = line.strip()
-        if line:
+        if line := line.strip():
             key, val = line.split('=', 1)
             os_release_dict[key] = val.strip('"')
     pretty_name = ''
@@ -71,28 +70,23 @@ def get_os_style(image_layer, binary):
     is not available, make an educated guess as to what kind of OS the layer
     might be based off of given the pkg_format + package manager. If the binary
     provided does not exist in base.yml, add a warning notice'''
-    origin_layer = 'Layer {}'.format(image_layer.layer_index)
-    # see if we can find what OS this is
-    os_release = get_os_release(image_layer)
-    if os_release:
+    origin_layer = f'Layer {image_layer.layer_index}'
+    if os_release := get_os_release(image_layer):
         # We know with high degree of certainty what the OS is
         image_layer.origins.add_notice_to_origins(origin_layer, Notice(
             formats.os_release.format(os_style=os_release), 'info'))
         # we can set the OS of the image layer
         image_layer.os_guess = os_release
+    elif os_guess := command_lib.check_os_guess(binary):
+        # We can make a guess
+        image_layer.origins.add_notice_to_origins(origin_layer, Notice(
+            formats.os_style_guess.format(
+                package_manager=binary, os_list=os_guess), 'info'))
+        image_layer.os_guess = os_guess
     else:
-        # We will try looking for the possible OSs based on the binary
-        os_guess = command_lib.check_os_guess(binary)
-        if os_guess:
-            # We can make a guess
-            image_layer.origins.add_notice_to_origins(origin_layer, Notice(
-                formats.os_style_guess.format(
-                    package_manager=binary, os_list=os_guess), 'info'))
-            image_layer.os_guess = os_guess
-        else:
-            # No binary and no os-release means we have no idea about base OS
-            image_layer.origins.add_notice_to_origins(origin_layer, Notice(
-                errors.no_etc_release, 'warning'))
+        # No binary and no os-release means we have no idea about base OS
+        image_layer.origins.add_notice_to_origins(origin_layer, Notice(
+            errors.no_etc_release, 'warning'))
 
     # set a package format if there is one for this binary
     image_layer.pkg_format = command_lib.check_pkg_format(binary)
@@ -125,7 +119,7 @@ def analyze_first_layer(image_obj, master_list, options):
     4. Process and bundle that information into the image object
     5. Return a Prereqs object for subsequent layer processing"""
     # set up a notice origin for the first layer
-    origin_first_layer = 'Layer {}'.format(image_obj.layers[0].layer_index)
+    origin_first_layer = f'Layer {image_obj.layers[0].layer_index}'
     # check if the layer is empty
     if com.is_empty_layer(image_obj.layers[0]):
         logger.warning(errors.empty_layer)
@@ -154,10 +148,7 @@ def analyze_first_layer(image_obj, master_list, options):
         get_os_style(image_obj.layers[0], prereqs.binary)
         # if there is a binary, extract packages
         if prereqs.binary:
-            # mount the first layer
-            target_dir = mount_first_layer(image_obj.layers[0])
-            # set the host path to the mount point
-            if target_dir:
+            if target_dir := mount_first_layer(image_obj.layers[0]):
                 prereqs.host_path = target_dir
             # core default execution on the first layer
             core.execute_base(image_obj.layers[0], prereqs)

@@ -77,7 +77,7 @@ class TestTemplate2(Template):
                    'path': 'file.path',
                    'licenses': 'file.licenses'}
         # we update the mapping with another defined mapping
-        mapping.update(self.origins())
+        mapping |= self.origins()
         return mapping
 
     def package(self):
@@ -87,7 +87,7 @@ class TestTemplate2(Template):
                    'proj_url': 'package.url',
                    'files': 'package.files'}
         # we update the mapping with another defined mapping
-        mapping.update(self.origins())
+        mapping |= self.origins()
         return mapping
 
     def image_layer(self):
@@ -96,14 +96,14 @@ class TestTemplate2(Template):
                    'packages': 'layer.packages',
                    'files': 'layer.files'}
         # we update the mapping with another defined mapping
-        mapping.update(self.origins())
+        mapping |= self.origins()
         return mapping
 
     def image(self):
         mapping = {'repotag': 'image.repotag',
                    'layers': 'image.layers'}
         # we update the mapping with another defined mapping
-        mapping.update(self.origins())
+        mapping |= self.origins()
         return mapping
 
     def notice(self):

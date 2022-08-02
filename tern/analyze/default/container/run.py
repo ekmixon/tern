@@ -28,9 +28,7 @@ def extract_image(args):
     as an image tarball. Extract the image into a working directory accordingly
     Return an image name and tag and an image digest if it exists"""
     if args.docker_image:
-        # extract the docker image
-        image_attrs = docker_api.dump_docker_image(args.docker_image)
-        if image_attrs:
+        if image_attrs := docker_api.dump_docker_image(args.docker_image):
             # repo name and digest is preferred, but if that doesn't exist
             # the repo name and tag will do. If neither exist use repo Id.
             if image_attrs['Id']:
@@ -55,7 +53,7 @@ def setup(image_obj):
     """Setup the image object and anything else for analysis"""
     # Add a Notice object for each layer
     for layer in image_obj.layers:
-        origin_str = 'Layer {}'.format(layer.layer_index)
+        origin_str = f'Layer {layer.layer_index}'
         layer.origins.add_notice_origin(origin_str)
     # Set up working directories and mount points
     rootfs.set_up()
@@ -72,9 +70,7 @@ def teardown(image_obj):
 def execute_image(args):
     """Execution path for container images"""
     logger.debug('Starting analysis...')
-    image_string = extract_image(args)
-    # If the image has been extracted, load the metadata
-    if image_string:
+    if image_string := extract_image(args):
         full_image = cimage.load_full_image(
             image_string, args.load_until_layer)
         # check if the image was loaded successfully

@@ -29,12 +29,12 @@ def get_image_extracted_licenses(image_obj):
         for package in layer.packages:
             if package.pkg_license:
                 unique_licenses.add(package.pkg_license)
-    extracted_texts = []
-    for lic in list(unique_licenses):
-        extracted_texts.append(json_formats.get_extracted_text_dict(
-            extracted_text=lic, license_ref=spdx_common.get_license_ref(
-                lic)))
-    return extracted_texts
+    return [
+        json_formats.get_extracted_text_dict(
+            extracted_text=lic, license_ref=spdx_common.get_license_ref(lic)
+        )
+        for lic in list(unique_licenses)
+    ]
 
 
 def get_image_layer_relationships(image_obj):

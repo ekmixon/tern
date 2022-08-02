@@ -36,12 +36,12 @@ def get_snippet_list(invoke_step, prereqs):
                     0, 'export ' + var.split('=')[0] + '=\"' + var.split('=')[1] + '\"')
         # If work_dir exist cd into it
         if prereqs.layer_workdir:
-            snippet_list.insert(0, 'cd ' + prereqs.layer_workdir)
+            snippet_list.insert(0, f'cd {prereqs.layer_workdir}')
         return 'container', snippet_list
     if 'host' in invoke_step.keys():
         snippet_list = invoke_step.get('host')
         # we would expect to cd into the layer's host path
-        snippet_list.insert(0, 'cd ' + prereqs.host_path)
+        snippet_list.insert(0, f'cd {prereqs.host_path}')
         return 'host', snippet_list
     return '', []
 
@@ -87,7 +87,7 @@ def invoke_in_rootfs_wrapped(snippet_list, shell, package=""):
         result = invoke_in_rootfs(snippet_list, shell, package)
         result = result[:-1]
     except subprocess.CalledProcessError as error:
-        error_msgs = error_msgs + error.stderr
+        error_msgs += error.stderr
     return result, error_msgs
 
 
@@ -98,7 +98,7 @@ def invoke_on_host_wrapped(snippet_list, shell, package=""):
         result = invoke_on_host(snippet_list, shell, package)
         result = result[:-1]
     except subprocess.CalledProcessError as error:
-        error_msgs = error_msgs + error.stderr
+        error_msgs += error.stderr
     return result, error_msgs
 
 
@@ -151,7 +151,7 @@ def get_live_attr_list(attr_dict, prereqs):
                 error_msgs = error_msgs + error.decode('utf-8')
     if 'delimiter' in attr_dict.keys():
         res_list = result.decode('utf-8').split(attr_dict['delimiter'])
-        if res_list[-1] == '' or res_list[-1] == '\n':
+        if res_list[-1] in ['', '\n']:
             res_list.pop()
             return res_list, error_msgs
         return res_list, error_msgs
@@ -166,9 +166,11 @@ def collect_file_metadata(items):
     file_list = []
     for files_str in items:
         # convert the string into a list
-        files = []
-        for filepath in filter(bool, files_str.split('\n')):
-            files.append(filepath.lstrip('/'))
+        files = [
+            filepath.lstrip('/')
+            for filepath in filter(bool, files_str.split('\n'))
+        ]
+
         file_list.append(files)
     return file_list
 
@@ -190,10 +192,7 @@ def collect_list_metadata(listing, prereqs, live=False):
             else:
                 items, msg = get_pkg_attrs(listing[item], prereqs)
             msgs = msgs + msg
-            if item == 'files':
-                pkg_dict.update({item: collect_file_metadata(items)})
-            else:
-                pkg_dict.update({item: items})
+            pkg_dict[item] = collect_file_metadata(items) if item == 'files' else items
         else:
             warnings = warnings + errors.no_listing_for_base_key.format(
                 listing_key=item)

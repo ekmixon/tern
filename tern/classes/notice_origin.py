@@ -44,21 +44,21 @@ class NoticeOrigin:
         errors = ''
         hints = ''
         for notice in self.notices:
-            if notice.level == 'info':
-                info = info + notice.message
-            if notice.level == 'warning':
-                warnings = warnings + notice.message
             if notice.level == 'error':
                 errors = errors + notice.message
-            if notice.level == 'hint':
+            elif notice.level == 'hint':
                 hints = hints + notice.message
-        notice_msg = formats.notice_format.format(
+            elif notice.level == 'info':
+                info = info + notice.message
+            elif notice.level == 'warning':
+                warnings = warnings + notice.message
+        return formats.notice_format.format(
             origin=self.origin_str,
             info=info,
             warnings=warnings,
             errors=errors,
-            hints=hints)
-        return notice_msg
+            hints=hints,
+        )
 
     def to_dict(self, template=None):
         no_dict = {}
@@ -68,16 +68,14 @@ class NoticeOrigin:
             # use the template mapping for key names
             for key, prop in prop_names(self):
                 if prop in template.notice_origin().keys():
-                    no_dict.update(
-                        {template.notice_origin()[prop]: self.__dict__[key]})
+                    no_dict[template.notice_origin()[prop]] = self.__dict__[key]
             # update the 'notices' if it exists in the mapping
             if 'notices' in template.notice_origin().keys():
-                no_dict.update(
-                    {template.notice_origin()['notices']: notice_list})
+                no_dict[template.notice_origin()['notices']] = notice_list
         else:
             # directly use property names
             for key, prop in prop_names(self):
-                no_dict.update({prop: self.__dict__[key]})
+                no_dict[prop] = self.__dict__[key]
             # update with 'notices' info
-            no_dict.update({'notices': notice_list})
+            no_dict['notices'] = notice_list
         return no_dict

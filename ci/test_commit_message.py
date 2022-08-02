@@ -20,7 +20,7 @@ def has_url(string):
             r"(?:\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))*\)|" \
             r"[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
     urls = re.findall(regex, string)
-    return bool(len(urls) > 0)
+    return len(urls) > 0
 
 
 def lint_commit(commit_id):
@@ -39,7 +39,7 @@ def lint_commit(commit_id):
     msg_list = re.split('\n\n|\r', message)
     commit_subject = msg_list[0]
     if len(msg_list) <= 2:
-        print("Commit {} does not have a body.".format(sha_short))
+        print(f"Commit {sha_short} does not have a body.")
         check = False
     try:
         # pop the subject and signature
@@ -50,9 +50,7 @@ def lint_commit(commit_id):
 
     # Check 2: Subject length is less than about 50
     if len(commit_subject) > 54:
-        print(
-            "The subject of commit {} should be 50 characters or less.".format(
-                sha_short))
+        print(f"The subject of commit {sha_short} should be 50 characters or less.")
         check = False
 
     # Check 3: Each line of the body is less than 72
@@ -88,12 +86,9 @@ if __name__ == '__main__':
     except GitCommandError:
         pass
     repo.git.fetch('upstream')
-    # Will return commit IDs differentiating HEAD and main
-    commitstr = repo.git.rev_list('HEAD', '^upstream/main', no_merges=True)
-    # If we are on the project's main branch then there will be no
-    # difference and the result will be an empty string
-    # So we will not proceed if there is no difference
-    if commitstr:
+    if commitstr := repo.git.rev_list(
+        'HEAD', '^upstream/main', no_merges=True
+    ):
         commits = commitstr.split('\n')
         for commit_id in commits:
             lint_commit(commit_id)

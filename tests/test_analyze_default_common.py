@@ -20,15 +20,15 @@ class TestAnalyzeDefaultCommon(unittest.TestCase):
     def testUpdateMasterListWithoutPackages(self):
         self.image.load_image()
         layer = self.image.layers[0]
-        master_list = list()
+        master_list = []
         common.update_master_list(master_list, layer)
         self.assertEqual(len(master_list), len(layer.packages))
 
     def testUpdateMasterListWithPackages(self):
         self.image.load_image()
         layer = self.image.layers[0]
-        master_list = list()
-        older_master_list = list()
+        master_list = []
+        older_master_list = []
         for pkg in layer.packages:
             master_list.append(pkg)
             older_master_list.append(pkg)
@@ -38,11 +38,7 @@ class TestAnalyzeDefaultCommon(unittest.TestCase):
         self.assertEqual(len(layer.packages), 0)
 
         for old_pkg in older_master_list:
-            exists = False
-            for pkg in master_list:
-                if old_pkg.is_equal(pkg):
-                    exists = True
-                    break
+            exists = any(old_pkg.is_equal(pkg) for pkg in master_list)
             self.assertTrue(exists)
 
 

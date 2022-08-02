@@ -41,9 +41,7 @@ def get_file_type(scancode_file_dict):
         return 'SOURCE'
     if scancode_file_dict.get('is_text'):
         return 'TEXT'
-    if scancode_file_dict.get('is_archive'):
-        return 'ARCHIVE'
-    return 'OTHER'
+    return 'ARCHIVE' if scancode_file_dict.get('is_archive') else 'OTHER'
 
 
 def get_scancode_file(file_dict):
@@ -70,8 +68,7 @@ def get_scancode_file(file_dict):
     if file_dict['scan_errors']:
         # for each scan error make a notice
         for err in file_dict['scan_errors']:
-            fd.origins.add_notice_to_origins(
-                'File: ' + fd.path, Notice(err, 'error'))
+            fd.origins.add_notice_to_origins(f'File: {fd.path}', Notice(err, 'error'))
     return fd
 
 
@@ -136,11 +133,11 @@ def collect_layer_data(layer_obj):
     # run scancode against a directory
     try:
         processes = len(os.sched_getaffinity(0))
-        command = "scancode -ilpcu --quiet --timeout 300 -n {} --json -".format(processes)
+        command = f"scancode -ilpcu --quiet --timeout 300 -n {processes} --json -"
     except (AttributeError, NotImplementedError):
         command = "scancode -ilpcu --quiet --timeout 300 --json -"
     full_cmd = get_filesystem_command(layer_obj, command)
-    origin_layer = 'Layer {}'.format(layer_obj.layer_index)
+    origin_layer = f'Layer {layer_obj.layer_index}'
     result, error = rootfs.shell_command(True, full_cmd)
     if not result:
         logger.error(
@@ -154,8 +151,7 @@ def collect_layer_data(layer_obj):
         for f in data['files']:
             if f['type'] == 'file' and f['size'] != 0:
                 files.append(get_scancode_file(f))
-                for package in f['packages']:
-                    packages.append(get_scancode_package(package))
+                packages.extend(get_scancode_package(package) for package in f['packages'])
     return files, packages
 
 

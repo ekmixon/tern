@@ -52,10 +52,8 @@ def execute_base(layer_obj, prereqs):
     the filesystem in the working directory and /proc, /sys and /dev device
     nodes are mounted"""
     # Add notices to this layer object
-    origin_layer = 'Layer {}'.format(layer_obj.layer_index)
-    # find the binary listing
-    listing = command_lib.get_base_listing(prereqs.binary)
-    if listing:
+    origin_layer = f'Layer {layer_obj.layer_index}'
+    if listing := command_lib.get_base_listing(prereqs.binary):
         # put generic notice about how package metadata is collected
         snippet_msg = formats.invoke_for_base.format(binary=prereqs.binary)
         layer_obj.origins.add_notice_to_origins(
@@ -81,7 +79,6 @@ def execute_base(layer_obj, prereqs):
         bundle.fill_pkg_results(layer_obj, pkg_dict, listing.get("pkg_format"))
         # remove extra FileData objects from the layer
         com.remove_duplicate_layer_files(layer_obj)
-    # if there is no listing add a notice
     else:
         layer_obj.origins.add_notice_to_origins(
             origin_layer, Notice(errors.no_listing_for_base_key.format(
@@ -93,7 +90,7 @@ def execute_snippets(layer_obj, command_obj, prereqs):
     installed in the layer using the default method:
         For snippets, we will get the packages installed by the command"""
     # set up a notice origin for the layer
-    origin_layer = 'Layer {}'.format(layer_obj.layer_index)
+    origin_layer = f'Layer {layer_obj.layer_index}'
     # find packages for the command
     cmd_msg = (formats.invoke_for_snippets + '\n' +
                content.print_package_invoke(command_obj.name))

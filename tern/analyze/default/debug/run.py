@@ -83,8 +83,8 @@ def invoke_script(args):
     print("*************************************************************")
     print()
     print('Output list: ' + ' '.join(result[0]))
-    print('Error messages: ' + result[1])
-    print('Number of elements: ' + str(len(result[0])))
+    print(f'Error messages: {result[1]}')
+    print(f'Number of elements: {len(result[0])}')
     print()
 
 
@@ -95,10 +95,14 @@ def get_mount_path():
 
 def check_shell():
     """Check if any shell binary is available in the mounted filesystem"""
-    for shell in command_lib.command_lib['common']['shells']:
-        if os.path.exists(os.path.join(get_mount_path(), shell[1:])):
-            return shell
-    return ''
+    return next(
+        (
+            shell
+            for shell in command_lib.command_lib['common']['shells']
+            if os.path.exists(os.path.join(get_mount_path(), shell[1:]))
+        ),
+        '',
+    )
 
 
 def drop_into_layer(image_obj, layer_index):
@@ -113,15 +117,12 @@ def drop_into_layer(image_obj, layer_index):
         # mount all layers uptil the provided layer index
         target = multi_layer.mount_overlay_fs(image_obj, layer_index)
     mount_path = get_mount_path()
-    print("\nWorking directory is: {}\n".format(mount_path))
-    # check if there is a shell
-    shell = check_shell()
-    if shell:
+    print(f"\nWorking directory is: {mount_path}\n")
+    if shell := check_shell():
         rootfs.prep_rootfs(target)
-        print("\nRun 'cd {} && sudo chroot . {}' to look around".format(
-            mount_path, shell))
+        print(f"\nRun 'cd {mount_path} && sudo chroot . {shell}' to look around")
     else:
-        print("\nRun 'cd {}' to look around".format(mount_path))
+        print(f"\nRun 'cd {mount_path}' to look around")
         print("A shell binary doesn't exist in the filesystem. You're on "
               "your own.")
     print("\nAfter exiting from your session, run 'cd -' to go back "
@@ -156,8 +157,8 @@ def execute_step(image_obj, args):
     print("*************************************************************")
     print()
     for layer in image_obj.layers:
-        created_by = layer.created_by if layer.created_by else 'unknown'
-        print("[{}] {}".format(image_obj.layers.index(layer), created_by))
+        created_by = layer.created_by or 'unknown'
+        print(f"[{image_obj.layers.index(layer)}] {created_by}")
     try:
         while True:
             try:

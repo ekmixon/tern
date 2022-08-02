@@ -111,8 +111,7 @@ def report_layer(layer, args):
     if not layer_report:
         logger.error(
             "Unable to generate %s report type for layer", args.report_format)
+    elif args.output_file:
+        write_report(layer_report, args)
     else:
-        if args.output_file:
-            write_report(layer_report, args)
-        else:
-            print(layer_report)
+        print(layer_report)

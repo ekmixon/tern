@@ -90,10 +90,8 @@ class SpdxJSON(consumer.Consume):
         the spdxjson generator, create a total list of image layer objects.
         We assume the layers are ordered in the order or report files"""
         layer_list = []
-        layer_count = 1
-        for report in reports:
+        for layer_count, report in enumerate(reports, start=1):
             layer = create_image_layer(report)
             layer.layer_index = layer_count
             layer_list.append(layer)
-            layer_count += 1
         return layer_list

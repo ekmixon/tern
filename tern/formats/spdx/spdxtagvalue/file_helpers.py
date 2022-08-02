@@ -15,10 +15,9 @@ def get_file_comment(filedata):
     an empty string if no notices are present'''
     comment = ''
     for origin in filedata.origins.origins:
-        comment = comment + '{}:'.format(origin.origin_str) + '\n'
+        comment = comment + f'{origin.origin_str}:' + '\n'
         for notice in origin.notices:
-            comment = comment + \
-                '{}: {}'.format(notice.level, notice.message) + '\n'
+            comment = ((comment + f'{notice.level}: {notice.message}') + '\n')
     return comment
 
 
@@ -34,8 +33,11 @@ def get_license_info_block(filedata):
         block = 'LicenseInfoInFile: NONE\n'
     else:
         for lic in spdx_common.get_file_licenses(filedata):
-            block = block + 'LicenseInfoInFile: {}'.format(
-                spdx_common.get_license_ref(lic)) + '\n'
+            block = (
+                block
+                + f'LicenseInfoInFile: {spdx_common.get_license_ref(lic)}'
+            ) + '\n'
+
     return block
 
 
@@ -45,7 +47,7 @@ def get_file_contributor_block(filedata):
     block with the list of authors. If empty, return an empty string'''
     block = ''
     for author in filedata.authors:
-        block = block + 'FileContributor: {}'.format(author) + '\n'
+        block = block + f'FileContributor: {author}' + '\n'
     return block
 
 
@@ -58,31 +60,29 @@ def get_file_block(filedata, template, layer_id):
     block = ''
     mapping = filedata.to_dict(template)
     # File Name
-    block = block + 'FileName: {}'.format(mapping['FileName']) + '\n'
+    block = block + f"FileName: {mapping['FileName']}" + '\n'
     # SPDX ID
-    block = block + 'SPDXID: {}'.format(
-        spdx_common.get_file_spdxref(filedata, layer_id)) + '\n'
+    block = (
+        block + f'SPDXID: {spdx_common.get_file_spdxref(filedata, layer_id)}'
+    ) + '\n'
+
     # File Type
-    block = block + 'FileType: {}'.format(mapping['FileType']) + '\n'
+    block = block + f"FileType: {mapping['FileType']}" + '\n'
     # File checksum
-    block = block + 'FileChecksum: {}'.format(
-        spdx_common.get_file_checksum(filedata)) + '\n'
+    block = (
+        block + f'FileChecksum: {spdx_common.get_file_checksum(filedata)}'
+    ) + '\n'
+
     # Concluded license - we won't provide this
-    block = block + 'LicenseConcluded: NOASSERTION' + '\n'
+    block = f'{block}LicenseConcluded: NOASSERTION' + '\n'
     # License info in file
-    block = block + get_license_info_block(filedata)
+    block += get_license_info_block(filedata)
     # File copyright text - we don't know this
-    block = block + 'FileCopyrightText: NOASSERTION' + '\n'
-    # File comment - we add this only if there is a comment
-    comment = spdx_common.get_file_comment(filedata)
-    if comment:
+    block = f'{block}FileCopyrightText: NOASSERTION' + '\n'
+    if comment := spdx_common.get_file_comment(filedata):
         block = block + 'FileComment: <text>\n' + comment + '</text>' + '\n'
-    # File Notice - we add this only if there is a notice
-    notice = spdx_common.get_file_notice(filedata)
-    if notice:
+    if notice := spdx_common.get_file_notice(filedata):
         block = block + 'FileNotice: <text>\n' + notice + '</text>' + '\n'
-    # File Contributor - we add this only if there are contributors
-    contributors = get_file_contributor_block(filedata)
-    if contributors:
+    if contributors := get_file_contributor_block(filedata):
         block = block + contributors
     return block

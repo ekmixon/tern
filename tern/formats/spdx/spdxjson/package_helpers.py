@@ -27,24 +27,21 @@ def get_package_dict(package, template):
     JSON dictionary representation of the package. The analyzed files will
     go in a separate dictionary for the JSON document.'''
     mapping = package.to_dict(template)
-    package_dict = {
+    return {
         'name': mapping['PackageName'],
         'SPDXID': spdx_common.get_package_spdxref(package),
-        'versionInfo': mapping['PackageVersion'] if mapping['PackageVersion']
-        else 'NOASSERTION',
-        'downloadLocation': mapping['PackageDownloadLocation'] if
-        mapping['PackageDownloadLocation'] else 'NONE',
-        'filesAnalyzed': 'false',  # always false for packages
-        'licenseConcluded': 'NOASSERTION',  # always NOASSERTION
+        'versionInfo': mapping['PackageVersion'] or 'NOASSERTION',
+        'downloadLocation': mapping['PackageDownloadLocation'] or 'NONE',
+        'filesAnalyzed': 'false',
+        'licenseConcluded': 'NOASSERTION',
         'licenseDeclared': spdx_common.get_license_ref(
-            mapping['PackageLicenseDeclared']) if
-        mapping['PackageLicenseDeclared'] else 'NONE',
-        'copyrightText': mapping['PackageCopyrightText'] if
-        mapping['PackageCopyrightText'] else'NONE',
-        'comment': get_package_comment(package)
+            mapping['PackageLicenseDeclared']
+        )
+        if mapping['PackageLicenseDeclared']
+        else 'NONE',
+        'copyrightText': mapping['PackageCopyrightText'] or 'NONE',
+        'comment': get_package_comment(package),
     }
-
-    return package_dict
 
 
 def get_packages_list(image_obj, template):

@@ -67,9 +67,12 @@ def get_existing_bins(fspath):
     """Return a list of all the binaries existing on the given filesystem"""
     bin_list = []
     for key, value in command_lib.command_lib['base'].items():
-        for path in value['path']:
-            if os.path.exists(os.path.join(fspath, path)):
-                bin_list.append(key)
+        bin_list.extend(
+            key
+            for path in value['path']
+            if os.path.exists(os.path.join(fspath, path))
+        )
+
     return bin_list
 
 
@@ -88,7 +91,7 @@ def fill_package_metadata(pkg_obj, pkg_listing, shell, work_dir, envs):
             key_list, invoke_msg = command_lib.get_pkg_attr_list(
                 shell, key_listing, work_dir, envs, package_name=pkg_obj.name)
             if key_list:
-                pkg_dict.update({key: key_list})
+                pkg_dict[key] = key_list
             else:
                 pkg_obj.origins.add_notice_to_origins(
                     origin_str, Notice(invoke_msg, 'error'))
@@ -108,9 +111,7 @@ def get_package_dependencies(package_listing, package_name, shell,
     if deps_listing:
         deps_list, invoke_msg = command_lib.get_pkg_attr_list(
             shell, deps_listing, work_dir, envs, package_name=package_name)
-        if deps_list:
-            return list(set(deps_list)), ''
-        return [], invoke_msg
+        return (list(set(deps_list)), '') if deps_list else ([], invoke_msg)
     return [], deps_msg
 
 
@@ -118,7 +119,7 @@ def get_commands_from_metadata(image_layer):
     """Given the image layer object, get the list of command objects that
     created the layer. Return an empty list of we can't do that"""
     # set up notice origin for the layer
-    origin_layer = 'Layer {}'.format(image_layer.layer_index)
+    origin_layer = f'Layer {image_layer.layer_index}'
     # check if there is a key containing the script that created the layer
     if image_layer.created_by:
         cmd, instr = fltr.get_run_command(image_layer.created_by)
@@ -149,12 +150,7 @@ def update_master_list(master_list, layer_obj):
     unique = []
     for _ in range(len(layer_obj.packages)):
         item = layer_obj.packages.pop(0)
-        # check for whether the package exists on the master list
-        exists = False
-        for pkg in master_list:
-            if item.is_equal(pkg):
-                exists = True
-                break
+        exists = any(item.is_equal(pkg) for pkg in master_list)
         if not exists:
             unique.append(item)
     # add all the unique packages to the master list

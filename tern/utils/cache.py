@@ -46,17 +46,13 @@ def load():
 def get_packages(layer_hash):
     '''Given the layer hash, retrieve cache record. If none return an empty
     list'''
-    if layer_hash in cache.keys():
-        return cache[layer_hash]['packages']
-    return []
+    return cache[layer_hash]['packages'] if layer_hash in cache.keys() else []
 
 
 def get_files(layer_hash):
     '''Given the layer hash, retrieve file layers cache record.
     If none return an empty list'''
-    if layer_hash in cache.keys():
-        return cache[layer_hash]['files']
-    return []
+    return cache[layer_hash]['files'] if layer_hash in cache.keys() else []
 
 
 def get_layers():
@@ -66,9 +62,8 @@ def get_layers():
 
 def get_origins(layer_hash):
     '''Return the origins dictionary'''
-    if layer_hash in get_layers():
-        if 'origins' in cache[layer_hash].keys():
-            return cache[layer_hash]['origins']
+    if layer_hash in get_layers() and 'origins' in cache[layer_hash].keys():
+        return cache[layer_hash]['origins']
     return []
 
 

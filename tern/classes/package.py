@@ -130,12 +130,11 @@ class Package:
 
     def add_file(self, file):
         """Add a file to the list of files present in a package"""
-        if isinstance(file, FileData):
-            if file.path not in self.get_file_paths():
-                self.files.append(file)
-        else:
+        if not isinstance(file, FileData):
             raise TypeError('Object type is {0}, should be FileData'.format(
                 type(file)))
+        if file.path not in self.get_file_paths():
+            self.files.append(file)
 
     def remove_file(self, file_path):
         """Remove a file from the list of files present in a package"""
@@ -156,22 +155,19 @@ class Package:
             for key, prop in prop_names(self):
                 # check if the property is in the mapping
                 if prop in template.package().keys():
-                    pkg_dict.update(
-                        {template.package()[prop]: self.__dict__[key]})
+                    pkg_dict[template.package()[prop]] = self.__dict__[key]
             # update the 'origins' part if it exists in the mapping
             if 'origins' in template.package().keys():
-                pkg_dict.update(
-                    {template.package()['origins']: self.origins.to_dict()})
+                pkg_dict[template.package()['origins']] = self.origins.to_dict()
             # update the 'files' part if it exists in the mapping
             if 'files' in template.package().keys():
-                pkg_dict.update(
-                    {template.package()['files']: file_list})
+                pkg_dict[template.package()['files']] = file_list
         else:
             # don't map, just use the property name as the key
             for key, prop in prop_names(self):
-                pkg_dict.update({prop: self.__dict__[key]})
-            pkg_dict.update({'origins': self.origins.to_dict()})
-            pkg_dict.update({'files': file_list})
+                pkg_dict[prop] = self.__dict__[key]
+            pkg_dict['origins'] = self.origins.to_dict()
+            pkg_dict['files'] = file_list
         return pkg_dict
 
     def __fill_properties(self, package_dict):
@@ -182,8 +178,10 @@ class Package:
             if prop not in ('name', 'origins'):
                 if prop not in package_dict.keys():
                     self.origins.add_notice_to_origins(
-                        self.name, Notice(
-                            "No metadata for key: {}".format(prop), 'warning'))
+                        self.name,
+                        Notice(f"No metadata for key: {prop}", 'warning'),
+                    )
+
                 else:
                     self.__dict__[key] = package_dict[prop]
 
@@ -199,19 +197,17 @@ class Package:
         name and then give it a package dictionary to fill in the rest
         return true if package name is the same as the one used to instantiate
         the object, false if not'''
-        if self.name == package_dict['name']:
-            # update the package dictionary with file info
-            file_list = package_dict.get('files', False)
-            if file_list:
-                fd_list = []
-                for file_dict in file_list:
-                    fd = FileData(file_dict['name'], file_dict['path'])
-                    fd.fill(file_dict)
-                    fd_list.append(fd)
-                package_dict['files'] = fd_list
-            self.__fill_properties(package_dict)
-            return True
-        return False
+        if self.name != package_dict['name']:
+            return False
+        if file_list := package_dict.get('files', False):
+            fd_list = []
+            for file_dict in file_list:
+                fd = FileData(file_dict['name'], file_dict['path'])
+                fd.fill(file_dict)
+                fd_list.append(fd)
+            package_dict['files'] = fd_list
+        self.__fill_properties(package_dict)
+        return True
 
     def is_equal(self, other):
         '''This method performs a deep comparison between two objects by

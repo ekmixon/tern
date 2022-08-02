@@ -22,22 +22,22 @@ logger = logging.getLogger(constants.logger_name)
 
 def create_script(command, prereqs, method):
     """Create the script to execute in an unshared environment"""
-    chroot_script = """#!{host_shell}
-
-mount -t proc /proc {mnt}/proc
-chroot {mnt} {fs_shell} -c "{snip}"
-"""
     host_script = """#!{host_shell}
 {host_shell} -c "{snip}"
 """
     script = ''
     script_path = os.path.join(rootfs.get_working_dir(), constants.script_file)
     if method == 'container':
+        chroot_script = """#!{host_shell}
+
+mount -t proc /proc {mnt}/proc
+chroot {mnt} {fs_shell} -c "{snip}"
+"""
         script = chroot_script.format(host_shell=prereqs.host_shell,
                                       mnt=prereqs.host_path,
                                       fs_shell=prereqs.fs_shell,
                                       snip=command)
-    if method == 'host':
+    elif method == 'host':
         script = host_script.format(host_shell=prereqs.host_shell,
                                     snip=command)
     with open(script_path, 'w', encoding='utf-8') as f:

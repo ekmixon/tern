@@ -42,7 +42,7 @@ purl_types_with_namespaces = [
 
 def get_serial_number():
     ''' Return a randomly generated CycloneDX BOM serial number '''
-    return 'urn:uuid:' + str(uuid.uuid4())
+    return f'urn:uuid:{str(uuid.uuid4())}'
 
 
 def get_timestamp():

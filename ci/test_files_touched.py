@@ -24,11 +24,7 @@ repo.git.fetch('upstream')
 hcommit = repo.head.commit
 diff = hcommit.diff('upstream/main')
 
-changes = []
-for d in diff:
-    # Get the list of strings for changed files
-    changes.append(d.b_path)
-
+changes = [d.b_path for d in diff]
 # check that changes has entries
 if not changes:
     print('No changes to run tests for.')

@@ -133,8 +133,7 @@ def build_and_dump(dockerfile):
     # open up a client first
     # if this fails we cannot proceed further so we will exit
     client = check_docker_setup()
-    image = build_image(dockerfile, client)
-    if image:
+    if image := build_image(dockerfile, client):
         # the build succeeded, so we should be able to extract it
         if extract_image(image):
             image_metadata = image.attrs
@@ -185,14 +184,12 @@ def get_docker_image(image_tag_string, client):
 def get_docker_image_digest(image_tag):
     """Given an image and tag, get the image's digest in
     'image@sha_type:digest' format"""
-    digest = ""
     # open up a client first
     # if this fails we cannot proceed further so we will exit
     client = check_docker_setup()
     # get the image
     image = get_docker_image(image_tag, client)
-    if image:
-        digest = image.attrs['RepoDigests'][0]
+    digest = image.attrs['RepoDigests'][0] if image else ""
     # cleanup
     remove_image(image, client)
     close_client(client)
@@ -206,8 +203,7 @@ def dump_docker_image(image_tag):
     # open up a client first
     # if this fails we cannot proceed further so we will exit
     client = check_docker_setup()
-    image = get_docker_image(image_tag, client)
-    if image:
+    if image := get_docker_image(image_tag, client):
         if extract_image(image):
             image_metadata = image.attrs
     # now the client can be closed

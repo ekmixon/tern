@@ -28,11 +28,11 @@ logger = logging.getLogger(constants.logger_name)
 def mount_overlay_fs(image_obj, top_layer, driver=None):
     '''Given the image object and the top most layer, mount all the layers
     until the top layer using overlayfs'''
-    tar_layers = []
-    for index in range(0, top_layer + 1):
-        tar_layers.append(image_obj.layers[index].tar_file)
-    target = rootfs.mount_diff_layers(tar_layers, driver)
-    return target
+    tar_layers = [
+        image_obj.layers[index].tar_file for index in range(top_layer + 1)
+    ]
+
+    return rootfs.mount_diff_layers(tar_layers, driver)
 
 
 def fresh_analysis(image_obj, curr_layer, prereqs, options):
@@ -45,8 +45,7 @@ def fresh_analysis(image_obj, curr_layer, prereqs, options):
     4 Use the prescribed methods for the package managers to retrieve
     """
     # set up a notice origin for the current layer
-    origin_curr_layer = 'Layer {}'.format(
-        image_obj.layers[curr_layer].layer_index)
+    origin_curr_layer = f'Layer {image_obj.layers[curr_layer].layer_index}'
     image_obj.layers[curr_layer].origins.add_notice_to_origins(
         origin_curr_layer, Notice(formats.layer_created_by.format(
             created_by=image_obj.layers[curr_layer].created_by), 'info'))
@@ -59,11 +58,9 @@ def fresh_analysis(image_obj, curr_layer, prereqs, options):
     prereqs.host_path = target
     # mount dev, sys and proc after mounting diff layers
     rootfs.prep_rootfs(target)
-    # get commands that created the layer
-    # for docker images this is retrieved from the image history
-    command_list = dcom.get_commands_from_metadata(
-        image_obj.layers[curr_layer])
-    if command_list:
+    if command_list := dcom.get_commands_from_metadata(
+        image_obj.layers[curr_layer]
+    ):
         # for each command look up the snippet library
         for command in command_list:
             pkg_listing = command_lib.get_package_listing(command.name)
@@ -102,19 +99,18 @@ def analyze_subsequent_layers(image_obj, prereqs, master_list, options):
             prereqs.layer_workdir = \
                 image_obj.layers[curr_layer].get_layer_workdir()
         # make a notice for each layer
-        origin_next_layer = 'Layer {}'.format(
-            image_obj.layers[curr_layer].layer_index)
+        origin_next_layer = f'Layer {image_obj.layers[curr_layer].layer_index}'
         # check if this is an empty layer
         if common.is_empty_layer(image_obj.layers[curr_layer]):
             # we continue to the next layer
             logger.warning(errors.empty_layer)
             image_obj.layers[curr_layer].origins.add_notice_to_origins(
                 origin_next_layer, Notice(errors.empty_layer, 'warning'))
-            curr_layer = curr_layer + 1
+            curr_layer += 1
             continue
         if not common.load_from_cache(image_obj.layers[curr_layer],
                                       options.redo):
             fresh_analysis(image_obj, curr_layer, prereqs, options)
         # update the master list
         dcom.update_master_list(master_list, image_obj.layers[curr_layer])
-        curr_layer = curr_layer + 1
+        curr_layer += 1

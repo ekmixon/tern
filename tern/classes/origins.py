@@ -31,14 +31,12 @@ class Origins:
         return self.__origins
 
     def get_origin(self, string):
-        for orij in self.__origins:
-            if orij.origin_str == string:
-                return orij
-        return None
+        return next(
+            (orij for orij in self.__origins if orij.origin_str == string), None
+        )
 
     def add_notice_to_origins(self, orig_string, notice):
-        orij = self.get_origin(orig_string)
-        if orij:
+        if orij := self.get_origin(orig_string):
             orij.add_notice(notice)
         else:
             notice_orij = NoticeOrigin(orig_string)

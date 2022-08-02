@@ -64,8 +64,7 @@ def root_command(command, *extra):
     if not general.check_root():
         full_cmd.append('sudo')
     full_cmd.extend(command)
-    for arg in extra:
-        full_cmd.append(arg)
+    full_cmd.extend(iter(extra))
     # invoke
     logger.debug("Running command: %s", ' '.join(full_cmd))
     with subprocess.Popen(full_cmd, stdout=subprocess.PIPE,  # nosec
@@ -87,8 +86,7 @@ def shell_command(is_sudo, command, *extra):
     if not general.check_root() and is_sudo:
         full_cmd.append('sudo')
     full_cmd.extend(command)
-    for arg in extra:
-        full_cmd.append(arg)
+    full_cmd.extend(iter(extra))
     # invoke
     logger.debug("Running command: %s", ' '.join(full_cmd))
     with subprocess.Popen(full_cmd, stdout=subprocess.PIPE,  # nosec
@@ -101,9 +99,7 @@ def check_tar_permissions(tar_file, directory_path):
     'Operation not permitted' then return False. Else return True'''
     _, error = shell_command(
         False, extract_tar, tar_file, '-C', directory_path)
-    if "Operation not permitted" in error.decode():
-        return False
-    return True
+    return "Operation not permitted" not in error.decode()
 
 
 def check_tar_members(tar_file):
@@ -112,11 +108,9 @@ def check_tar_members(tar_file):
     result, error = shell_command(False, check_tar, tar_file)
     if error:
         error_msg = error.decode()
-        if "Removing leading" in error_msg:
-            pass
-        else:
+        if "Removing leading" not in error_msg:
             logger.error("Malformed tar: %s", error_msg)
-            raise EOFError("Malformed tarball: {}".format(tar_file))
+            raise EOFError(f"Malformed tarball: {tar_file}")
     return result
 
 
@@ -213,15 +207,15 @@ def mount_base_layer(base_layer_tar):
 def mount_diff_layers(diff_layers_tar, driver=None):
     '''Using overlayfs, mount all the layer tarballs'''
     # make a list of directory paths to give to lowerdir
-    lower_dir_paths = []
-    for layer_tar in diff_layers_tar:
-        lower_dir_paths.append(get_untar_dir(layer_tar))
+    lower_dir_paths = [get_untar_dir(layer_tar) for layer_tar in diff_layers_tar]
     upper_dir = lower_dir_paths.pop()
     lower_dir = ':'.join(list(reversed(lower_dir_paths)))
     merge_dir_path = os.path.join(get_working_dir(), constants.mergedir)
     workdir_path = os.path.join(get_working_dir(), constants.workdir)
-    args = 'lowerdir=' + lower_dir + ',upperdir=' + upper_dir + \
-           ',workdir=' + workdir_path
+    args = (
+        f'lowerdir={lower_dir},upperdir={upper_dir}' + ',workdir='
+    ) + workdir_path
+
     if driver == 'fuse':
         root_command(fuse_mount, args, merge_dir_path)
     else:
@@ -235,9 +229,16 @@ def run_chroot_command(command_string, shell):
     mount_proc = '--mount-proc=' + os.path.join(
         os.path.abspath(target_dir), 'proc')
     try:
-        result = root_command(unshare_pid, mount_proc, 'chroot', target_dir,
-                              shell, '-c', command_string)
-        return result
+        return root_command(
+            unshare_pid,
+            mount_proc,
+            'chroot',
+            target_dir,
+            shell,
+            '-c',
+            command_string,
+        )
+
     except subprocess.CalledProcessError as e:
         logger.warning("Error executing command in chroot")
         raise subprocess.CalledProcessError(
@@ -247,8 +248,7 @@ def run_chroot_command(command_string, shell):
 def run_host_command(command_string, shell):
     '''Run the command string on the host'''
     try:
-        result = root_command([], shell, '-c', command_string)
-        return result
+        return root_command([], shell, '-c', command_string)
     except subprocess.CalledProcessError as e:
         logger.warning("Error executing command in chroot")
         raise subprocess.CalledProcessError(
@@ -308,7 +308,7 @@ def calc_fs_hash(fs_path):
             [fs_hash_path], os.path.abspath(fs_path))
         file_name = hashlib.sha256(hash_contents).hexdigest()
         # write file to an appropriate location
-        hash_file = os.path.join(os.path.dirname(fs_path), file_name) + '.txt'
+        hash_file = f'{os.path.join(os.path.dirname(fs_path), file_name)}.txt'
         with open(hash_file, 'w', encoding='utf-8') as f:
             f.write(hash_contents.decode('utf-8'))
         return file_name

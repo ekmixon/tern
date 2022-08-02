@@ -37,12 +37,12 @@ def get_layer_extracted_licenses(layer_obj):
     for package in layer_obj.packages:
         if package.pkg_license:
             unique_licenses.add(package.pkg_license)
-    extracted_texts = []
-    for lic in list(unique_licenses):
-        extracted_texts.append(json_formats.get_extracted_text_dict(
-            extracted_text=lic, license_ref=spdx_common.get_license_ref(
-                lic)))
-    return extracted_texts
+    return [
+        json_formats.get_extracted_text_dict(
+            extracted_text=lic, license_ref=spdx_common.get_license_ref(lic)
+        )
+        for lic in list(unique_licenses)
+    ]
 
 
 def get_image_layer_relationships(image_obj):
@@ -55,12 +55,13 @@ def get_image_layer_relationships(image_obj):
       "relatedSpdxElement" : "SPDXRef-layer",
       "relationshipType" : "CONTAINS"
     }'''
-    layer_relationships = []
     image_ref = spdx_common.get_image_spdxref(image_obj)
 
-    # Required - DOCUMENT_DESCRIBES relationship
-    layer_relationships.append(json_formats.get_relationship_dict(
-        json_formats.spdx_id, image_ref, 'DESCRIBES'))
+    layer_relationships = [
+        json_formats.get_relationship_dict(
+            json_formats.spdx_id, image_ref, 'DESCRIBES'
+        )
+    ]
 
     for index, layer in enumerate(image_obj.layers):
         layer_ref = spdx_common.get_layer_spdxref(layer)
@@ -88,11 +89,13 @@ def get_layer_snapshot_relationships(layer_obj, docref):
     """Given a layer object, and the SPDX ref of the document, return a list
     of dictionaries describing the relationship between the snapshot document
     and the packages listed therein"""
-    relationships = []
+    relationships = [
+        json_formats.get_relationship_dict(
+            json_formats.spdx_id, docref, 'DESCRIBES'
+        )
+    ]
 
-    # document level DESCRIBES
-    relationships.append(json_formats.get_relationship_dict(
-        json_formats.spdx_id, docref, 'DESCRIBES'))
+
     # package relationships
     for package in layer_obj.packages:
         pkg_ref = spdx_common.get_package_spdxref(package)
@@ -170,9 +173,7 @@ def get_layer_dict(layer_obj):
             spdx_common.get_layer_verification_code(layer_obj)
         }
 
-    # Include layer package comment only if it exists
-    layer_pkg_comment = get_layer_package_comment(layer_obj)
-    if layer_pkg_comment:
+    if layer_pkg_comment := get_layer_package_comment(layer_obj):
         layer_dict['comment'] = layer_pkg_comment
 
     # Include layer licenses from files only if they exist
@@ -181,8 +182,10 @@ def get_layer_dict(layer_obj):
     layer_license_refs = []
     if layer_licenses:
         # Use the layer LicenseRef in the list instead of license expression
-        for lic in layer_licenses:
-            layer_license_refs.append(spdx_common.get_license_ref(lic))
+        layer_license_refs.extend(
+            spdx_common.get_license_ref(lic) for lic in layer_licenses
+        )
+
         layer_dict['licenseInfoFromFiles'] = layer_license_refs
 
     return layer_dict
@@ -195,9 +198,4 @@ def get_layers_list(image_obj):
         name
         versionInfo
         downloadLocation'''
-    layer_dicts = []
-    for layer in image_obj.layers:
-        # Create a list of dictionaries. Each dictionary represents one
-        # layer as a SPDX package
-        layer_dicts.append(get_layer_dict(layer))
-    return layer_dicts
+    return [get_layer_dict(layer) for layer in image_obj.layers]

@@ -88,7 +88,7 @@ def print_invoke_list(info_dict, info):
                     report = report + '\t' + snippet + '\n'
     else:
         for value in info_dict[info]:
-            report = report + ' ' + value
+            report = f'{report} {value}'
     report = report + '\n'
     return report
 
@@ -98,8 +98,7 @@ def print_package_invoke(command_name):
     package name, return a string with the list of commands that will be
     invoked in the container'''
     report = ''
-    command_listing = command_lib.get_command_listing(command_name)
-    if command_listing:
+    if command_listing := command_lib.get_command_listing(command_name):
         pkg_list = command_listing['packages']
         for pkg_dict in pkg_list:
             report = report + print_invoke_list(pkg_dict, 'version')

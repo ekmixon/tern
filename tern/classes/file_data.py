@@ -182,17 +182,15 @@ class FileData:
             for key, prop in prop_names(self):
                 # check if the property is in the mapping
                 if prop in template.file_data().keys():
-                    file_dict.update(
-                        {template.file_data()[prop]: self.__dict__[key]})
+                    file_dict[template.file_data()[prop]] = self.__dict__[key]
             # update the 'origins' part if it exists in the mapping
             if 'origins' in template.file_data().keys():
-                file_dict.update(
-                    {template.file_data()['origins']: self.origins.to_dict()})
+                file_dict[template.file_data()['origins']] = self.origins.to_dict()
         else:
             # don't map, just use the property name as the key
             for key, prop in prop_names(self):
-                file_dict.update({prop: self.__dict__[key]})
-            file_dict.update({'origins': self.origins.to_dict()})
+                file_dict[prop] = self.__dict__[key]
+            file_dict['origins'] = self.origins.to_dict()
         return file_dict
 
     def __fill_properties(self, file_dict):
@@ -202,8 +200,10 @@ class FileData:
             if prop not in ('name', 'origins', 'path'):
                 if prop not in file_dict.keys():
                     self.origins.add_notice_to_origins(
-                        self.name, Notice(
-                            "No metadata for key: {}".format(prop), 'warning'))
+                        self.name,
+                        Notice(f"No metadata for key: {prop}", 'warning'),
+                    )
+
                 else:
                     self.__dict__[key] = file_dict[prop]
 
@@ -267,7 +267,12 @@ class FileData:
     def is_equal(self, other):
         '''Returns true if the two FileData objects have the same name, path
         and checksum properties'''
-        if not isinstance(other, FileData):
-            return False
-        return (self.name == other.name and self.path == other.path and
-                self.checksum == other.checksum)
+        return (
+            (
+                self.name == other.name
+                and self.path == other.path
+                and self.checksum == other.checksum
+            )
+            if isinstance(other, FileData)
+            else False
+        )

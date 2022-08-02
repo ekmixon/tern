@@ -14,10 +14,7 @@ def get_file_contributors(filedata):
     '''The SPDX spec allows for an optional list of file contributors.
     If there are any authors found in the file, return a list of authors.
     If empty, return an empty list'''
-    contributors = []
-    for author in filedata.authors:
-        contributors.append(author)
-    return contributors
+    return list(filedata.authors)
 
 
 def get_file_dict(filedata, template, layer_id):
@@ -47,25 +44,20 @@ def get_file_dict(filedata, template, layer_id):
     if not filedata.licenses:
         file_dict['licenseInfoInFiles'] = ['NONE']
     else:
-        file_license_refs = []
-        for lic in spdx_common.get_file_licenses(filedata):
-            # Add the LicenseRef to the list instead of license expression
-            file_license_refs.append(spdx_common.get_license_ref(lic))
+        file_license_refs = [
+            spdx_common.get_license_ref(lic)
+            for lic in spdx_common.get_file_licenses(filedata)
+        ]
+
         file_dict['licenseInfoInFiles'] = file_license_refs
 
-    # We only add this if there is a notice
-    file_notice = spdx_common.get_file_notice(filedata)
-    if file_notice:
+    if file_notice := spdx_common.get_file_notice(filedata):
         file_dict['noticeText'] = file_notice
 
-    # We only add this if there is a comment
-    file_comment = spdx_common.get_file_comment(filedata)
-    if file_comment:
+    if file_comment := spdx_common.get_file_comment(filedata):
         file_dict['comment'] = file_comment
 
-    # We only add this if there are contributors
-    file_contributors = get_file_contributors(filedata)
-    if file_contributors:
+    if file_contributors := get_file_contributors(filedata):
         file_dict['fileContributors'] = file_contributors
 
     return file_dict

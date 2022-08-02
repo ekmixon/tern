@@ -61,12 +61,11 @@ class Notice:
             for key, prop in prop_names(self):
                 # check if the property is in the mapping
                 if prop in template.notice().keys():
-                    notice_dict.update(
-                        {template.notice()[prop]: self.__dict__[key]})
+                    notice_dict[template.notice()[prop]] = self.__dict__[key]
         else:
             # don't map, just use the property name as the key
             for key, prop in prop_names(self):
-                notice_dict.update({prop: self.__dict__[key]})
+                notice_dict[prop] = self.__dict__[key]
             # special case - don't include 'levels'
             notice_dict.pop('levels')
         return notice_dict

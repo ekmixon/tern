@@ -55,13 +55,12 @@ class Dockerfile():
 
     def is_none(self):
         """Check if the object is empty."""
-        is_none = True
-        if (self.structure or
-                self.envs or
-                self.prev_env or
-                self.filepath):
-            is_none = False
-        return is_none
+        return (
+            not self.structure
+            and not self.envs
+            and not self.prev_env
+            and not self.filepath
+        )
 
 
 def get_dockerfile_obj(dockerfile_name, prev_env=None):
@@ -90,7 +89,7 @@ def replace_env(key_value_dict, df_structure_dict):
                     object
     df_structure_dict: a dictionary from the dockerfile object's structure'''
     for key, val in key_value_dict.items():
-        envvar1 = '$' + key
+        envvar1 = f'${key}'
         envvar2 = '${' + key + '}'
         df_structure_dict['content'] = df_structure_dict['content'].replace(
             envvar1, val)
@@ -138,11 +137,12 @@ def update_parent_images(dfobj):
     '''Given a Dockerfile object, update the parent_images list. This function
     will be useful after ARG values have been replaced in expand_arg() that
     can sometimes affect the FROM line(s) of a Dockerfile.'''
-    new_parent_list = []
-    for cmd_dict in dfobj.structure:
-        if cmd_dict['instruction'] == 'FROM':
-            new_parent_list.append(re.split(" as", cmd_dict['value'],
-                                            flags=re.IGNORECASE)[0])
+    new_parent_list = [
+        re.split(" as", cmd_dict['value'], flags=re.IGNORECASE)[0]
+        for cmd_dict in dfobj.structure
+        if cmd_dict['instruction'] == 'FROM'
+    ]
+
     dfobj.parent_images = new_parent_list
 
 
@@ -153,10 +153,10 @@ def parse_from_image(dfobj):
           'tag': <image tag>,
           'digest_type': <the hashing algorithm used>
           'digest': <image digest>}..]'''
-    image_list = []
-    for image_string in dfobj.parent_images:
-        image_list.append(general.parse_image_string(image_string))
-    return image_list
+    return [
+        general.parse_image_string(image_string)
+        for image_string in dfobj.parent_images
+    ]
 
 
 def expand_from_images(dfobj, image_list):
@@ -197,24 +197,24 @@ def should_pin(run_line, package, index):
         return True
     if index < 1:
         return False
-    if index < len(run_line) + 1:
-        if run_line[index + 1] == \
-                command_lib.command_lib['snippets'][package]['install']:
-            return False
-    return True
+    return (
+        index >= len(run_line) + 1
+        or run_line[index + 1]
+        != command_lib.command_lib['snippets'][package]['install']
+    )
 
 
 def expand_package(command_dict, package, version, pinning_separator):
     '''Update the given dockerfile object with the pinned package
     and version information. '''
-    sub_string = ''
-    for i, word in enumerate(command_dict['value'].split()):
-        # only pin if the package word is not the install directive
-        if word == package and should_pin(command_dict['value'].split(),
-                                          word, i):
-            sub_string += word + pinning_separator + version + ' '
-        else:
-            sub_string += word + ' '
+    sub_string = ''.join(
+        word + pinning_separator + version + ' '
+        if word == package
+        and should_pin(command_dict['value'].split(), word, i)
+        else f'{word} '
+        for i, word in enumerate(command_dict['value'].split())
+    )
+
     command_dict['value'] = sub_string
     # Update 'content' to match 'value' in dfobj
     command_dict['content'] = command_dict['instruction'] + ' ' + \
@@ -223,11 +223,11 @@ def expand_package(command_dict, package, version, pinning_separator):
 
 def get_run_layers(dfobj):
     '''Given a dockerfile object, collect a list of RUN command dictionaries'''
-    run_list = []
-    for command_dict in dfobj.structure:
-        if command_dict['instruction'] == 'RUN':
-            run_list.append(command_dict)
-    return run_list
+    return [
+        command_dict
+        for command_dict in dfobj.structure
+        if command_dict['instruction'] == 'RUN'
+    ]
 
 
 def get_install_packages(command_dict):
@@ -236,8 +236,7 @@ def get_install_packages(command_dict):
     command_words, _ = common.filter_install_commands(command_dict['value'])
     install_packages = []
     for command in command_words:
-        for word in command.words:
-            install_packages.append(word)
+        install_packages.extend(iter(command.words))
     return install_packages
 
 
@@ -245,11 +244,11 @@ def get_command_list(dfobj_structure):
     '''Given a dockerfile object structure, return the list of commands
     from the list of dictionaries. Useful when you don't want to loop
     through the dictionary for commands'''
-    cmd_list = []
-    for cmd_dict in dfobj_structure:
-        if cmd_dict['instruction'] != 'COMMENT':
-            cmd_list.append(cmd_dict['content'].rstrip())
-    return cmd_list
+    return [
+        cmd_dict['content'].rstrip()
+        for cmd_dict in dfobj_structure
+        if cmd_dict['instruction'] != 'COMMENT'
+    ]
 
 
 def find_git_info(line, dockerfile_path):
@@ -277,11 +276,9 @@ def find_git_info(line, dockerfile_path):
     logger.debug('Parsed src_path is %s', src_path)
     # get the git project info
     comment_line = common.check_git_src(dockerfile_path)
-    # get the git project link
-    url_list = common.get_git_url(dockerfile_path)
-    if url_list:
+    if url_list := common.get_git_url(dockerfile_path):
         comment_url = ', '.join(url_list)
-        comment_line += ', project url(s): ' + comment_url
+        comment_line += f', project url(s): {comment_url}'
     return comment_line
 
 
@@ -301,10 +298,12 @@ def expand_add_command(dfobj):
 def get_from_indices(dfobj):
     """Given a dockerfile object, return the indices of FROM lines
     in the dfobj structure."""
-    from_lines = []
-    for idx, st in enumerate(dfobj.structure):
-        if st['instruction'] == 'FROM':
-            from_lines.append(idx)
+    from_lines = [
+        idx
+        for idx, st in enumerate(dfobj.structure)
+        if st['instruction'] == 'FROM'
+    ]
+
     from_lines.append(len(dfobj.structure))
     return from_lines
 

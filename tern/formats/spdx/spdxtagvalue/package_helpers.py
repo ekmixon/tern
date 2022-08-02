@@ -35,17 +35,15 @@ def get_package_block(package_obj, template):
     block = ''
     mapping = package_obj.to_dict(template)
     # Package Name
-    block += 'PackageName: {}\n'.format(mapping['PackageName'])
+    block += f"PackageName: {mapping['PackageName']}\n"
     # SPDXID
-    block += 'SPDXID: {}\n'.format(
-        spdx_common.get_package_spdxref(package_obj))
+    block += f'SPDXID: {spdx_common.get_package_spdxref(package_obj)}\n'
     # Package Version
     if mapping['PackageVersion']:
-        block += 'PackageVersion: {}\n'.format(mapping['PackageVersion'])
+        block += f"PackageVersion: {mapping['PackageVersion']}\n"
     # Package Download Location
     if mapping['PackageDownloadLocation']:
-        block += 'PackageDownloadLoaction: {}\n'.format(
-            mapping['PackageDownloadLocation'])
+        block += f"PackageDownloadLoaction: {mapping['PackageDownloadLocation']}\n"
     else:
         block += 'PackageDownloadLocation: NOASSERTION\n'
     # Files Analyzed (always false for packages)
@@ -54,8 +52,8 @@ def get_package_block(package_obj, template):
     block += 'PackageLicenseConcluded: NOASSERTION\n'
     # Package License Declared (use the license ref for this)
     if mapping['PackageLicenseDeclared']:
-        block += 'PackageLicenseDeclared: {}\n'.format(
-            spdx_common.get_license_ref(mapping['PackageLicenseDeclared']))
+        block += f"PackageLicenseDeclared: {spdx_common.get_license_ref(mapping['PackageLicenseDeclared'])}\n"
+
     else:
         block += 'PackageLicenseDeclared: NONE\n'
     # Package Copyright Text

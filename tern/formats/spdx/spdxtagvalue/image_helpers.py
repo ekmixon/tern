@@ -84,11 +84,11 @@ def get_image_block(image_obj, template):
     block = ''
     mapping = image_obj.to_dict(template)
     # Package Name
-    block += 'PackageName: {}\n'.format(mapping['PackageName'])
+    block += f"PackageName: {mapping['PackageName']}\n"
     # Package SPDXID
-    block += 'SPDXID: {}\n'.format(spdx_common.get_image_spdxref(image_obj))
+    block += f'SPDXID: {spdx_common.get_image_spdxref(image_obj)}\n'
     # Package Version
-    block += 'PackageVersion: {}\n'.format(mapping['PackageVersion'])
+    block += f"PackageVersion: {mapping['PackageVersion']}\n"
     # Package Download Location (always NOASSERTION)
     block += 'PackageDownloadLocation: NOASSERTION\n'
     # Files Analyzed (always false)
@@ -115,9 +115,7 @@ def get_image_block(image_obj, template):
         # if the layer has packages, print out the relationships
         if layer.packages:
             block += lhelpers.get_layer_package_relationships(layer) + '\n'
-    # print out all the packages if they are known
-    pkg_block = get_image_packages_block(image_obj, template)
-    if pkg_block:
+    if pkg_block := get_image_packages_block(image_obj, template):
         # add a blank line before adding the package block
         block += pkg_block + '\n'
         # print out the license block for packages

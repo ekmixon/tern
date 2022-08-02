@@ -41,7 +41,7 @@ def get_string_id(string):
 
 def get_license_ref(license_string):
     """ For SPDX tag-value format, return a LicenseRef string """
-    return 'LicenseRef-' + get_string_id(license_string)
+    return f'LicenseRef-{get_string_id(license_string)}'
 
 
 ########################
@@ -51,7 +51,7 @@ def get_license_ref(license_string):
 def get_image_spdxref(image_obj):
     '''Given the image object, return an SPDX reference ID'''
     # here we return the image name, tag and id
-    return 'SPDXRef-{}'.format(image_obj.get_human_readable_id())
+    return f'SPDXRef-{image_obj.get_human_readable_id()}'
 
 
 ########################
@@ -81,14 +81,14 @@ def get_layer_licenses(layer_obj):
 def get_layer_spdxref(layer_obj):
     '''Given the layer object, return an SPDX reference ID'''
     # here we return the shortened diff_id of the layer
-    return 'SPDXRef-{}'.format(layer_obj.diff_id[:10])
+    return f'SPDXRef-{layer_obj.diff_id[:10]}'
 
 
 def get_layer_spdxref_snapshot(timestamp):
     """Given the layer object created at container build time, return an
     SPDX reference ID. For this case, a layer's diff_id and filesystem hash
     is not known so we will provide a generic ID"""
-    return 'SPDXRef-snapshot-{}'.format(timestamp)
+    return f'SPDXRef-snapshot-{timestamp}'
 
 
 def get_layer_verification_code(layer_obj):
@@ -115,7 +115,7 @@ def get_layer_verification_code(layer_obj):
 def get_layer_checksum(layer_obj):
     '''Return a SPDX formatted checksum value. It should be of the form:
     checksum_type: <checksum>'''
-    return '{}: {}'.format(layer_obj.checksum_type.upper(), layer_obj.checksum)
+    return f'{layer_obj.checksum_type.upper()}: {layer_obj.checksum}'
 
 
 ##########################
@@ -128,7 +128,7 @@ def get_package_spdxref(package_obj):
                                              ver=package_obj.version)
     # replace all the strings that SPDX doesn't like
     clean_pkg_ref = re.sub(r'[:+~]', r'-', pkg_ref)
-    return 'SPDXRef-{}'.format(clean_pkg_ref)
+    return f'SPDXRef-{clean_pkg_ref}'
 
 
 #######################
@@ -142,14 +142,14 @@ def get_file_spdxref(filedata, layer_id):
     calculate a hash of this string'''
     file_string = filedata.path + filedata.checksum[:7] + layer_id
     fileid = get_string_id(file_string)
-    return 'SPDXRef-{}'.format(fileid)
+    return f'SPDXRef-{fileid}'
 
 
 def get_file_checksum(filedata):
     '''Given a FileData object, return the checksum required by SPDX.
     This should be of the form: <checksum_type>: <checksum>
     Currently, the spec requires a SHA1 checksum'''
-    return '{}: {}'.format('SHA1', filedata.get_checksum('sha1'))
+    return f"SHA1: {filedata.get_checksum('sha1')}"
 
 
 def get_file_notice(filedata):
@@ -166,8 +166,7 @@ def get_file_comment(filedata):
     an empty string if no notices are present'''
     comment = ''
     for origin in filedata.origins.origins:
-        comment = comment + '{}:'.format(origin.origin_str) + '\n'
+        comment = comment + f'{origin.origin_str}:' + '\n'
         for notice in origin.notices:
-            comment = comment + \
-                '{}: {}'.format(notice.level, notice.message) + '\n'
+            comment = ((comment + f'{notice.level}: {notice.message}') + '\n')
     return comment

@@ -34,7 +34,7 @@ logger = logging.getLogger(constants.logger_name)
 def load_docker_commands(dfobj):
     '''Given a dockerfile object get a persistent list of docker commands'''
     if not os.path.isfile(dfobj.filepath):
-        raise IOError('{} does not exist'.format(dfobj.filepath))
+        raise IOError(f'{dfobj.filepath} does not exist')
     global docker_commands
     docker_commands = dfobj.structure
     global dockerfile_global
@@ -98,12 +98,15 @@ def get_base_image_tag(dockerfile_lines):
             # Account for "as" keyword in FROM line
             base_image_string = re.split(" as", cmd_dict['value'],
                                          flags=re.IGNORECASE)[0]
-            from_line = 'FROM' + base_image_string
+            from_line = f'FROM{base_image_string}'
             # Check that potential ARG values has default
-            if i != 0 and dockerfile_lines[i - 1]['instruction'] == 'ARG':
-                if len(dockerfile_lines[i - 1]['value'].split('=')) == 1:
-                    raise ValueError('No ARG default value to pass to '
-                                     'FROM command in Dockerfile.')
+            if (
+                i != 0
+                and dockerfile_lines[i - 1]['instruction'] == 'ARG'
+                and len(dockerfile_lines[i - 1]['value'].split('=')) == 1
+            ):
+                raise ValueError('No ARG default value to pass to '
+                                 'FROM command in Dockerfile.')
             break
     return base_image_string, from_line
 
@@ -118,7 +121,7 @@ def created_to_instruction(created_by):
     first = instruction.split(' ').pop(0)
     if first and first not in parse.directives and \
             'RUN' not in instruction:
-        instruction = 'RUN ' + instruction
+        instruction = f'RUN {instruction}'
     return instruction
 
 
@@ -127,12 +130,16 @@ def set_imported_layers(docker_image):
     layers that were imported using the Dockerfile's FROM command or the ones
     that came before it'''
     index = -1
-    from_line = ''
     dockerfile_lines = docker_commands
-    for cmd in dockerfile_lines:
-        if cmd['instruction'] == 'FROM':
-            from_line = cmd['content'].rstrip()
-            break
+    from_line = next(
+        (
+            cmd['content'].rstrip()
+            for cmd in dockerfile_lines
+            if cmd['instruction'] == 'FROM'
+        ),
+        '',
+    )
+
     command_list = parse.get_command_list(dockerfile_lines)
     for layer in docker_image.layers:
         instr = created_to_instruction(layer.created_by)
@@ -141,7 +148,7 @@ def set_imported_layers(docker_image):
             break
     if index != -1:
         # index was set so all layers before this index has been imported
-        for i in range(0, index - 1):
+        for i in range(index - 1):
             docker_image.layers[i].import_str = from_line
 
 
@@ -220,9 +227,6 @@ def create_locked_dockerfile(dfobj):
 
 def write_locked_dockerfile(dfile, destination=None):
     '''Write the pinned Dockerfile to a file'''
-    if destination is not None:
-        file_name = destination
-    else:
-        file_name = constants.locked_dockerfile
+    file_name = constants.locked_dockerfile if destination is None else destination
     with open(file_name, 'w', encoding='utf-8') as f:
         f.write(dfile)

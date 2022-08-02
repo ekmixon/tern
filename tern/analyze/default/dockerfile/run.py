@@ -53,9 +53,11 @@ def get_dockerfile_packages():
             if msg:
                 layer.origins.add_notice_to_origins(
                     cmd['value'], Notice(msg, 'info'))
-            pkg_names = []
-            for command in install_commands:
-                pkg_names.append(fltr.get_installed_package_names(command))
+            pkg_names = [
+                fltr.get_installed_package_names(command)
+                for command in install_commands
+            ]
+
             for pkg_name in pkg_names:
                 pkg = Package(pkg_name)
                 # shell parser does not parse version pins yet
@@ -145,9 +147,7 @@ def base_and_run_analysis(dfile, options):
     image_list = []
     # Try to analyze the base image
     logger.debug('Analyzing base image...')
-    # this will pull, dump and load the base image
-    base_image = load_base_image()
-    if base_image:
+    if base_image := load_base_image():
         if base_image.origins.is_empty():
             # add a notice stating failure to build image
             base_image.origins.add_notice_to_origins(dfile, Notice(
@@ -195,10 +195,7 @@ def analyze_single_dockerfile(dockerfile, options):
 def execute_dockerfile(args, locking=False):
     """Execution path for Dockerfiles"""
     dfile = ''
-    if locking:
-        dfile = args.lock
-    else:
-        dfile = args.dockerfile
+    dfile = args.lock if locking else args.dockerfile
     image_list = []
     logger.debug("Parsing Dockerfile...")
     dfobj = parse.get_dockerfile_obj(dfile)
@@ -231,8 +228,7 @@ def write_dockerfile_stages(dfobj):
     dockerfiles = []
     filepath, filename = os.path.split(dfobj.filepath)
     for stage in stages:
-        stagefile = os.path.join(
-            filepath, '{}_{}'.format(filename, stages.index(stage) + 1))
+        stagefile = os.path.join(filepath, f'{filename}_{stages.index(stage) + 1}')
         with open(stagefile, 'w', encoding='utf-8') as f:
             f.write(stage)
         dockerfiles.append(stagefile)

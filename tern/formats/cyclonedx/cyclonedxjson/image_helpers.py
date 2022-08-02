@@ -20,10 +20,11 @@ def get_image_dict(image_obj):
         'type': 'container',
         'scope': 'required',
         'name': image_obj.name,
-        'version': image_obj.checksum_type + ':' + image_obj.checksum,
+        'version': f'{image_obj.checksum_type}:{image_obj.checksum}',
         'hashes': [],
-        'properties': []
+        'properties': [],
     }
+
 
     purl = PackageURL('docker', None, image_dict['name'], image_dict['version'])
     image_dict['purl'] = str(purl)
@@ -32,8 +33,7 @@ def get_image_dict(image_obj):
         for repotag in image_obj.repotags:
             image_dict['properties'].append(cyclonedx_common.get_property('tern:repotag', repotag))
 
-    os_guess = cyclonedx_common.get_os_guess(image_obj)
-    if os_guess:
+    if os_guess := cyclonedx_common.get_os_guess(image_obj):
         image_dict['properties'].append(cyclonedx_common.get_property('tern:os_guess', os_guess))
 
     cdx_hash = cyclonedx_common.get_hash(image_obj.checksum_type, image_obj.checksum)

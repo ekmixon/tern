@@ -69,19 +69,13 @@ def get_document_dict(image_obj, template):
     # Add list of layer dictionaries to packages list
     docu_dict['packages'] += lhelpers.get_layers_list(image_obj)
 
-    # Add list of package dictionaries to packages list, if they exist
-    pkgs_dict_list = phelpers.get_packages_list(image_obj, template)
-    if pkgs_dict_list:
+    if pkgs_dict_list := phelpers.get_packages_list(image_obj, template):
         docu_dict['packages'] += pkgs_dict_list
 
-    # Add list of file dictionaries, if they exist
-    files = fhelpers.get_files_list(image_obj, template)
-    if files:
+    if files := fhelpers.get_files_list(image_obj, template):
         docu_dict['files'] = files
 
-    # Add package and file extracted license texts, if they exist
-    extracted_texts = mhelpers.get_image_extracted_licenses(image_obj)
-    if extracted_texts:
+    if extracted_texts := mhelpers.get_image_extracted_licenses(image_obj):
         docu_dict['hasExtractedLicensingInfos'] = extracted_texts
 
     return docu_dict
@@ -126,14 +120,10 @@ def get_document_dict_snapshot(layer_obj, template):
         docu_dict['relationships'].append(json_formats.get_relationship_dict(
             json_formats.spdx_id, ref, 'DESCRIBES'))
 
-    # Add list of file dictionaries, if they exist
-    files = fhelpers.get_layer_files_list(layer_obj, template, timestamp)
-    if files:
+    if files := fhelpers.get_layer_files_list(layer_obj, template, timestamp):
         docu_dict['files'] = files
 
-    # Add package and file extracted license texts, if they exist
-    extracted_texts = lhelpers.get_layer_extracted_licenses(layer_obj)
-    if extracted_texts:
+    if extracted_texts := lhelpers.get_layer_extracted_licenses(layer_obj):
         docu_dict['hasExtractedLicensingInfos'] = extracted_texts
 
     return docu_dict

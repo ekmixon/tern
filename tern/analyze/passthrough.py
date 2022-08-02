@@ -32,7 +32,7 @@ def get_exec_command(command_string):
     run_bin = cmd_list.pop(0)
     bin_path = shutil.which(run_bin)
     if not bin_path:
-        raise OSError("Command {} not found".format(run_bin))
+        raise OSError(f"Command {run_bin} not found")
     cmd_list.insert(0, bin_path)
     return cmd_list
 
@@ -65,7 +65,7 @@ def execute_external_command(layer_obj, command, is_sudo=False):
     '''Given an Imagelayer object and a command in the form of a list, execute
     the command and store the results in the ImageLayer object either as
     results or as a Notice object'''
-    origin_layer = 'Layer {}'.format(layer_obj.layer_index)
+    origin_layer = f'Layer {layer_obj.layer_index}'
     result, error = rootfs.shell_command(is_sudo, command)
     if error:
         msg = error.decode('utf-8')

@@ -25,8 +25,7 @@ def get_installed_package_names(command):
     pkgs = []
     # check if the command attributes are set
     if command.is_set() and command.is_install():
-        for word in command.words:
-            pkgs.append(word)
+        pkgs.extend(iter(command.words))
     return pkgs
 
 
@@ -74,15 +73,14 @@ def consolidate_commands(command_list):
     while command_list:
         # match the first command with its following commands.
         first = command_list.pop(0)
-        for _ in range(0, len(command_list)):
+        for _ in range(len(command_list)):
             second = command_list.pop(0)
             if first.is_remove() and second.is_install():
                 # if remove then install, ignore the remove command
                 new_list.append(second)
-            else:
-                if not first.merge(second):
-                    # Unable to merge second, we should keep second command.
-                    command_list.append(second)
+            elif not first.merge(second):
+                # Unable to merge second, we should keep second command.
+                command_list.append(second)
         # after trying to merge with all following commands, add first command
         # to the new_dict.
         new_list.append(first)
@@ -107,7 +105,7 @@ def filter_install_commands(shell_command_line):
     if unrec_msgs:
         report += formats.unrecognized + unrec_msgs
     if branch_report:
-        report = report + branch_report
+        report += branch_report
     return consolidate_commands(filter2), report
 
 

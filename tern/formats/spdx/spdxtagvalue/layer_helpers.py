@@ -64,11 +64,9 @@ def get_package_license_info_block(layer_obj):
     not analyzed'''
     block = ''
     if layer_obj.files_analyzed:
-        licenses = spdx_common.get_layer_licenses(layer_obj)
-        if licenses:
+        if licenses := spdx_common.get_layer_licenses(layer_obj):
             for lic in licenses:
-                block += 'PackageLicenseInfoFromFiles: {}\n'.format(
-                    spdx_common.get_license_ref(lic))
+                block += f'PackageLicenseInfoFromFiles: {spdx_common.get_license_ref(lic)}\n'
         else:
             block = 'PackageLicenseInfoFromFiles: NONE\n'
     return block
@@ -105,26 +103,23 @@ def get_layer_block(layer_obj, template):
     are analyzed though, we just list the files in the block. The mapping
     should have keys:
         PackageFileName'''
-    block = ''
-    # Package Name
-    block += 'PackageName: {}\n'.format(os.path.basename(layer_obj.tar_file))
+    block = '' + f'PackageName: {os.path.basename(layer_obj.tar_file)}\n'
     # Package SPDXID
-    block += 'SPDXID: {}\n'.format(spdx_common.get_layer_spdxref(layer_obj))
+    block += f'SPDXID: {spdx_common.get_layer_spdxref(layer_obj)}\n'
     # Package File Name
-    block += 'PackageFileName: {}\n'.format(layer_obj.tar_file)
+    block += f'PackageFileName: {layer_obj.tar_file}\n'
     # Package Download Location (always NONE for layers)
     block += 'PackageDownloadLocation: NOASSERTION\n'
     # Files Analyzed
     if layer_obj.files_analyzed:
         # we need a package verification code
         block += 'FilesAnalyzed: true\n'
-        block += 'PackageVerificationCode: {}\n'.format(
-            spdx_common.get_layer_verification_code(layer_obj))
+        block += f'PackageVerificationCode: {spdx_common.get_layer_verification_code(layer_obj)}\n'
+
     else:
         block += 'FilesAnalyzed: false\n'
     # Package Checksum
-    block += 'PackageChecksum: {}\n'.format(
-        spdx_common.get_layer_checksum(layer_obj))
+    block += f'PackageChecksum: {spdx_common.get_layer_checksum(layer_obj)}\n'
     # Package License Concluded (always NOASSERTION)
     block += 'PackageLicenseConcluded: NOASSERTION\n'
     # All licenses info from files if files_analyzed is true

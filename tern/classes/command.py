@@ -64,10 +64,6 @@ class Command:
     def __set_prop(self, value, prop):
         if prop == 'subcommand':
             self.__subcommand = value
-        if prop == 'option_arg':
-            # Since the options and arguments are already listed
-            # don't do anything
-            pass
 
     def reassign_word(self, word, word_prop):
         '''Reassign a word from the list of words to the given property
@@ -85,14 +81,11 @@ class Command:
     def get_option_argument(self, option):
         '''Given an option flag, return the option argument. If there is
         no option with that name return None'''
-        for opt in self.__options:
-            if opt[0] == option:
-                return opt[1]
-        return None
+        return next((opt[1] for opt in self.__options if opt[0] == option), None)
 
     def is_set(self):
         '''Check if any flags are set'''
-        return not(self.flags == 0b000)
+        return self.flags != 0b000
 
     def set_install(self):
         '''Set install flag'''
@@ -146,7 +139,10 @@ class Command:
         parse the package name from the version and return the name.'''
         if separators[0] == '-':
             for i, char in enumerate(word):
-                if i < len(word):
-                    if char == separators[0] and word[i+1].isdigit():
-                        return word[:i]
+                if (
+                    i < len(word)
+                    and char == separators[0]
+                    and word[i + 1].isdigit()
+                ):
+                    return word[:i]
         return re.match(r'^[a-z-_A-Z\d]*', word).group()
